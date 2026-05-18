@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Earth & Satellite Simulator v4.9.2 (Command Center HUD Edition)</title>
+<style>
+  body { background:#000; color:#fff; text-align:center; font-family:sans-serif; }
+  canvas { background:#000; margin-top:20px; }
+  #sliderBox { margin-top:20px; }
+  input[type=range] { width:400px; }
+  #labels { position:absolute; top:10px; left:10px; text-align:left; font-size:14px; line-height:1.4; }
+  #timeBox { position:absolute; top:10px; right:10px; font-size:16px; font-family:monospace; color:#00ffcc; }
+  
+  /* プリセットUIのスタイリング */
+  #presetBox {
+    margin: 15px auto;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 12px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  #presetSelect {
+    background: #111;
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  #presetSelect option { background: #000; color: #fff; }
+
+  /* ジェムリン追加：管制室風データ可視化HUDのスタイリング */
+  #hudBox {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.6;
+    background: rgba(0, 15, 10, 0.75);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #00ffcc;
+    font-family: 'Courier New', monospace;
+    color: #00ffcc;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+    width: 260px;
+  }
+  .hud-title {
+    font-size: 14px;
+    font-weight: bold;
+    border-bottom: 1px solid #00ffcc;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .hud-val { color: #fff; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="labels">
+  <div style="color:#66aaff;">
+    LEO（Low Earth Orbit / 低軌道）：0–2,000 km（地球観測・偵察・通信）
+  </div>
+  <div style="color:#66ff99;">
+    MEO（Medium Earth Orbit / 中軌道）：2,000–35,786 km（GPS・測位衛星）
+  </div>
+  <div style="color:yellow;">
+    GEO（Geostationary Earth Orbit / 静止軌道）：35,786 km（気象・放送・通信）
+  </div>
+</div>
+
+<div id="timeBox">経過時間：0時間 0分 0秒</div>
+
+<div id="hudBox">
+  <div class="hud-title">📡 REAL-TIME TELEMETRY</div>
+  <div>TARGET ALT : <span id="hudAlt" class="hud-val">0</span> km</div>
+  <div>ORBIT VEL  : <span id="hudVel" class="hud-val">0</span> km/h</div>
+  <div>MACH SPEED : <span id="hudMach" class="hud-val">0</span> Mach</div>
+  <div>PERIOD     : <span id="hudPeriod" class="hud-val">0</span></div>
+  <div style="margin-top: 5px; border-top: 1px dashed rgba(0,255,204,0.3); padding-top: 5px;">
+    STATUS     : <span id="hudStatus" style="font-weight:bold;">-</span>
+  </div>
+</div>
+
+<h2>🌍 Earth & Satellite Simulator v4.9.2（リアルタイムHUD可視化モデル）</h2>
+<canvas id="canvas" width="600" height="600"></canvas>
+
+<br>
+<div id="presetBox">
+  <label for="presetSelect" style="font-size:14px; margin-right:8px; color:#aaa;">📊 ミッション·プリセットを選択:</label>
+  <select id="presetSelect">
+    <option value="custom">--- 自由設定 (カスタム) ---</option>
+    <option value="iss">ISS (国際宇宙ステーション) [LEO]</option>
+    <option value="hubble">ハッブル宇宙望遠鏡 [LEO]</option>
+    <option value="starlink">スターリンク衛星 (SpaceX) [LEO]</option>
+    <option value="daichi">地球観測衛星だいち (SSO) [現実・逆行軌道]</option>
+    <option value="michibiki">みちびき (準天頂衛星/日本) [MEOクラス]</option>
+    <option value="himawari">ひまわり (気象衛星/日本) [GEO]</option>
+    <option value="gundam00">軌道エレベーター基部 (ガンダム00) [GEO]</option>
+    <option value="gundam_reentry">大気圏突入限界 (初代ガンダム第5話) [極低軌道]</option>
+  </select>
+</div>
+
+<div id="sliderBox">
+  <label>高度: <span id="altLabel">400 km</span></label><br>
+  <input id="altSlider" type="range" min="0" max="45000" value="400"><br><br>
+
+  <label>軌道傾斜角: <span id="incLabel">0°</span></label><br>
+  <input id="incSlider" type="range" min="0" max="180" value="0">
+</div>
+
+<script>
+// ====== 物理定数 ======
+const G = 6.67430e-11;
+const M = 5.972e24;
+const R_EARTH = 6371e3;
+
+// ====== Canvas ======
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const cx = canvas.width / 2;
+const cy = canvas.height / 2;
+
+// ====== 地球画像 ======
+const earthImg = new Image();
+earthImg.src = "earth.jpg";
+
+// ====== スケール ======
+const scale = 8e-6;
+
+// ====== スライダー ======
+const slider = document.getElementById("altSlider");
+const altLabel = document.getElementById("altLabel");
+const incSlider = document.getElementById("incSlider");
+const incLabel = document.getElementById("incLabel");
+
+// ====== プリセットデータ定義 ======
+const presetSelect = document.getElementById("presetSelect");
+const satellitePresets = {
+  iss: { alt: 420, inc: 52 },
+  hubble: { alt: 525, inc: 29 },
+  starlink: { alt: 550, inc: 53 },
+  daichi: { alt: 666, inc: 98 },       
+  michibiki: { alt: 36000, inc: 44 }, 
+  himawari: { alt: 35786, inc: 0 },
+  gundam00: { alt: 35786, inc: 0 },    
+  gundam_reentry: { alt: 150, inc: 28 }
+};
+
+presetSelect.addEventListener("change", () => {
+  const mode = presetSelect.value;
+  if (mode !== "custom" && satellitePresets[mode]) {
+    slider.value = satellitePresets[mode].alt;
+    incSlider.value = satellitePresets[mode].inc;
+  }
+});
+
+slider.addEventListener("input", () => { presetSelect.value = "custom"; });
+incSlider.addEventListener("input", () => { presetSelect.value = "custom"; });
+
+// ====== 時間 ======
+let t = 0;
+const timeBox = document.getElementById("timeBox");
+const omega_earth = (2 * Math.PI / 86164) * 10;
+
+// ====== 星の背景 ======
+const stars = [];
+for (let i = 0; i < 250; i++) {
+  stars.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    baseAlpha: Math.random() * 0.7 + 0.3,
+    twinkleSpeed: Math.random() * 0.02 + 0.01
+  });
+}
+
+function drawStars() {
+  for (let s of stars) {
+    const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(s.x, s.y, 2, 2);
+  }
+}
+
+// ====== 複数衛星 ======
+const multiSats = [];
+for (let i = 0; i < 6; i++) multiSats.push({ alt: 500e3, theta0: (Math.PI*2/6)*i });
+for (let i = 0; i < 4; i++) multiSats.push({ alt: 20000e3, theta0: (Math.PI*2/4)*i });
+for (let i = 0; i < 3; i++) multiSats.push({ alt: 35786e3, theta0: (Math.PI*2/3)*i });
+
+// ====== 都市光 ======
+const cityLights = [];
+for (let i = 0; i < 250; i++) {
+  cityLights.push({
+    angle: Math.random() * Math.PI * 2,
+    brightness: Math.random() * 0.6 + 0.4
+  });
+}
+
+// ====== ★ 3D軌道リング ======
+function drawOrbitRingInclined(r, incRad, color) {
+  ctx.lineWidth = 2;
+  for (let a = 0; a < Math.PI * 2; a += 0.02) {
+    const x3 = r * Math.cos(a);
+    const y3 = r * Math.sin(a) * Math.cos(incRad);
+    const z3 = r * Math.sin(a) * Math.sin(incRad);
+
+    const sx = cx + x3 * scale;
+    const sy = cy + y3 * scale * (1 - z3 / r * 0.4);
+
+    const alpha = (z3 < 0) ? 0.25 : 1.0;
+    const rgba = color.replace("1)", alpha + ")");
+
+    if (a === 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = rgba;
+      ctx.moveTo(sx, sy);
+    } else {
+      ctx.strokeStyle = rgba;
+      ctx.lineTo(sx, sy);
+    }
+  }
+  ctx.stroke();
+}
+
+// ====== 衛星アイコン ======
+function drawSatelliteIcon(x, y, altitude) {
+  if (altitude < 2000e3) {
+    ctx.fillStyle = "red";
+    ctx.fillRect(x - 4, y - 2, 8, 4);
+    ctx.fillRect(x - 8, y - 1, 4, 2);
+    ctx.fillRect(x + 4, y - 1, 4, 2);
+  } else if (altitude < 35786e3) {
+    ctx.fillStyle = "lime";
+    ctx.fillRect(x - 5, y - 2, 10, 4);
+    ctx.fillRect(x - 12, y - 1, 7, 2);
+    ctx.fillRect(x + 5, y - 1, 7, 2);
+  } else {
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 12, y - 1, 8, 2);
+    ctx.fillRect(x + 4, y - 1, 8, 2);
+  }
+}
+
+function updateTimeDisplay() {
+  const hours = Math.floor(t / 3600);
+  const minutes = Math.floor((t % 3600) / 60);
+  const seconds = Math.floor(t % 60);
+  timeBox.textContent = `経過時間：${hours}時間 ${minutes}分 ${seconds}秒`;
+}
+
+// ====== メイン描画ループ ======
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawStars();
+
+  const altitude = slider.value * 1000;
+  altLabel.textContent = slider.value + " km";
+
+  const incDeg = incSlider.value;
+  incLabel.textContent = incDeg + "°";
+  const incRad = incDeg * Math.PI / 180;
+
+  const r = R_EARTH + altitude;
+  const v = Math.sqrt(G * M / r); // 秒速 (m/s)
+  const omega_sat = (v / r) * 10;
+
+  const earthAngle = omega_earth * t;
+
+  // ==========================================
+  // 【ジェムリン実装】リアルタイムHUDの計算とデータ更新
+  // ==========================================
+  const vKmH = v * 3.6; // 時速に変換 (km/h)
+  const mach = vKmH / 1225; // 簡易音速換算 (マッハ)
+  const periodSec = (2 * Math.PI * r) / v; // 軌道周期 (秒)
+
+  document.getElementById("hudAlt").textContent = parseInt(slider.value).toLocaleString();
+  document.getElementById("hudVel").textContent = Math.round(vKmH).toLocaleString();
+  document.getElementById("hudMach").textContent = mach.toFixed(1);
+
+  // 周期のフォーマット整形
+  const pHours = Math.floor(periodSec / 3600);
+  const pMinutes = Math.floor((periodSec % 3600) / 60);
+  if (pHours > 0) {
+    document.getElementById("hudPeriod").textContent = `${pHours}時間 ${pMinutes}分`;
+  } else {
+    document.getElementById("hudPeriod").textContent = `${pMinutes}分`;
+  }
+
+  // 高度に応じた動的ステータスアラート
+  const statusEl = document.getElementById("hudStatus");
+  if (slider.value < 200) {
+    statusEl.textContent = "⚠️ 大気圏突入・危険！";
+    statusEl.style.color = "#ff3333";
+  } else if (slider.value == 35786 && incDeg == 0) {
+    statusEl.textContent = "🔒 静止軌道・同期完了";
+    statusEl.style.color = "yellow";
+  } else if (slider.value < 2000) {
+    statusEl.textContent = "正常 (LEO・低軌道)";
+    statusEl.style.color = "#66aaff";
+  } else if (slider.value < 35786) {
+    statusEl.textContent = "正常 (MEO・中軌道)";
+    statusEl.style.color = "#66ff99";
+  } else {
+    statusEl.textContent = "正常 (HEO・高軌道)";
+    statusEl.style.color = "#ffaa00";
+  }
+
+  // ====== 地球 ======
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(earthAngle);
+  ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale);
+
+  // ====== 影 ======
+  let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, R_EARTH * scale);
+  grad.addColorStop(0.30, "rgba(0,0,0,0)");
+  grad.addColorStop(0.55, "rgba(0,0,0,0.35)");
+  grad.addColorStop(1.00, "rgba(0,0,0,0.85)");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // ====== 自転マーカー ======
+  const markerR = R_EARTH * scale;
+  const mx = cx + markerR * Math.cos(earthAngle);
+  const my = cy + markerR * Math.sin(earthAngle);
+  ctx.beginPath();
+  ctx.fillStyle = "cyan";
+  ctx.arc(mx, my, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ====== 都市光 ======
+  for (let c of cityLights) {
+    const angle = c.angle + earthAngle;
+    const x = cx + markerR * Math.cos(angle);
+    const y = cy + markerR * Math.sin(angle);
+    const sunX = 1, sunY = -0.3;
+    const dot = Math.cos(angle) * sunX + Math.sin(angle) * sunY;
+    if (dot < 0) {
+      ctx.fillStyle = `rgba(255,220,100,${c.brightness})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+
+  // ====== ★ 3D 軌道リング ======
+  drawOrbitRingInclined(R_EARTH + 500e3, incRad, "rgba(100,150,255,1)");
+  drawOrbitRingInclined(R_EARTH + 20000e3, incRad, "rgba(100,255,150,1)");
+  drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)");
+  drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
+
+  // ====== 複数衛星 ======
+  for (let sat of multiSats) {
+    const rr = R_EARTH + sat.alt;
+    const vv = Math.sqrt(G * M / rr);
+    const omega = (vv / rr) * 10;
+    const th = omega * t + sat.theta0;
+    const sx = cx + rr * Math.cos(th) * scale;
+    const sy = cy + rr * Math.sin(th) * Math.cos(incRad) * scale;
+    drawSatelliteIcon(sx, sy, sat.alt);
+  }
+
+  // ====== 代表衛星 ======
+  const th_s = omega_sat * t;
+  const sx = cx + r * Math.cos(th_s) * scale;
+  const sy = cy + r * Math.sin(th_s) * Math.cos(incRad) * scale;
+  drawSatelliteIcon(sx, sy, altitude);
+
+  // ====== 垂線 ======
+  const dx = sx - cx;
+  const dy = sy - cy;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const px = cx + dx * (R_EARTH * scale / len);
+  const py = cy + dy * (R_EARTH * scale / len);
+
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(255,255,255,0.4)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(px, py);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ====== 地表点 ======
+  ctx.beginPath();
+  ctx.fillStyle = "white";
+  ctx.arc(px, py, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  updateTimeDisplay();
+  t += 1;
+  requestAnimationFrame(draw);
+}
+
+earthImg.onload = () => { draw(); };
+</script>
+</body>
+</html>
