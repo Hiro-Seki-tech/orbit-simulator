@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Earth & Satellite Simulator v5.4.0 (Final Tactical Master)</title>
+<title>Earth & Satellite Simulator v5.4.2 (Director's Cut Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -20,12 +20,16 @@
   }
   #audioBtn.on { background: #002211; color: #00ffcc; border: 1px solid #00ffcc; box-shadow: 0 0 8px rgba(0,255,204,0.4); }
 
+  /* 💻 PC環境：左右に美しく固定分割する司令室コンソール */
   #controlRoomContainer {
     display: flex; justify-content: center; align-items: flex-start; gap: 25px;
     max-width: 1100px; margin: 0 auto;
   }
 
+  /* パネル設定 */
   #leftOperationalPanel { flex: 0 0 600px; text-align: center; }
+  #rightDataPanel { flex: 0 0 400px; display: flex; flex-direction: column; gap: 15px; text-align: left; }
+
   canvas { background:#000; border: 1px solid #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); max-width: 100%; height: auto; }
   
   #sliderBox { 
@@ -38,8 +42,6 @@
   .slider-row input[type=range] { flex: 1; margin: 0 15px; cursor: pointer; }
   .slider-val { width: 80px; text-align: right; font-weight: bold; color: #fff; font-size: 14px; }
 
-  #rightDataPanel { flex: 0 0 400px; display: flex; flex-direction: column; gap: 15px; text-align: left; }
-
   #hudBox {
     background: rgba(0, 10, 20, 0.85); padding: 15px; border-radius: 6px; border: 1px solid #00ffcc;
     color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); font-size: 13px; line-height: 1.6;
@@ -47,23 +49,33 @@
   .hud-title { font-size: 14px; font-weight: bold; border-bottom: 1px solid #00ffcc; margin-bottom: 8px; color: #fff; letter-spacing: 1px; }
   .hud-val { color: #fff; font-weight: bold; }
 
+  #mapBox { text-align: left; }
   .map-label { color: #00ffcc; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px; font-weight: bold; }
 
   #presetBox { background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #00ffcc; }
   #presetSelect { background: #000; color: #00ffff; border: 1px solid #00ffff; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
 
+  /* 📱 縦長スマホ環境：ヒロ監督指定の「プリセット ➡️ スライダー ➡️ 地球 ➡️ 地図 ➡️ HUD」へ変身！ */
   @media (max-width: 1024px) {
-    #controlRoomContainer { flex-direction: column; align-items: center; }
-    #leftOperationalPanel { flex: 1 1 100%; width: 100%; }
-    #rightDataPanel { flex: 1 1 100%; width: 100%; margin-top: 20px; }
-    #sliderBox { width: 100%; }
+    #controlRoomContainer { display: flex; flex-direction: column; align-items: center; }
+    
+    /* 🌟 パネルの中身をコンテナの直系として扱うための魔法 */
+    #leftOperationalPanel, #rightDataPanel { display: contents; }
+    
+    /* 🌟 ヒロ監督指定の黄金オーダー（orderプロパティ） */
+    #presetBox { order: 1; width: 100%; margin-top: 10px; margin-bottom: 10px; } /* 1. プリセット */
+    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                /* 2. スライダー */
+    #canvas    { order: 3; }                                                /* 3. 地球（3D） */
+    #mapBox    { order: 4; width: 100%; margin-top: 15px; }                 /* 4. 2D地図 */
+    #hudBox    { order: 5; width: 100%; }                                   /* 5. HUD（データ） */
+    
     #timeBox { position: static; text-align: center; margin-bottom: 15px; }
   }
 </style>
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">STRATEGIC MISSION CONTROL v5.4.0</h2>
+<h2 style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">STRATEGIC MISSION CONTROL v5.4.2</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
@@ -191,20 +203,18 @@ function initAudio() {
   spaceHum.start();
 }
 
-// 🌟 【新機能】どこでも画面を1回触ったら自動でオーディオONにするデフォルトONシステム
 function autoEnableAudio() {
   if (audioEnabled) return;
   initAudio();
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   audioEnabled = true;
   const btn = document.getElementById("audioBtn");
-  btn.textContent = "🔊 AUDIO: ON";
-  btn.className = "on";
-  playSE("custom"); // 起動確認音
+  btn.textContent = "🔊 AUDIO: ON"; btn.className = "on";
+  playSE("custom");
 }
 
 function toggleAudio(event) {
-  if (event) event.stopPropagation(); // 画面クリックイベントとの衝突防止
+  if (event) event.stopPropagation();
   const btn = document.getElementById("audioBtn");
   if (!audioEnabled) {
     initAudio(); if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -283,9 +293,7 @@ function drawGroundTrack(incRad, earthAngle) {
 
 function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) {
   targetCtx.save(); targetCtx.translate(x, y);
-  
-  // 🗺️ 2D地図上の衛星サイズ：ヒロの指示通り、さらに「2倍（スケール1.5）」にウルトラ拡大！
-  if(is2D) targetCtx.scale(1.5, 1.5); 
+  if(is2D) targetCtx.scale(1.5, 1.5); // 監督指示：2D地図上で巨大化
 
   switch(type) {
     case "iss":
@@ -317,7 +325,6 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
       let coreColor = "yellow";
       if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } 
       else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; }
-
       targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); 
       targetCtx.fillRect(6, -2, 10, 4);  
       targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2);  
@@ -345,15 +352,16 @@ function update() {
   const r = R_EARTH + alt, v = Math.sqrt(G*M / r), omega_sat = (v/r)*10, earthAngle = (2*Math.PI/86164)*10*t;
   const satAngle = omega_sat * t;
 
-  // --- 2D TRACKING ---
-  const latRad = Math.asin(Math.sin(incRad)*Math.sin(satAngle)), latDeg = latRad * 180 / Math.PI;
-  let lonRad = satAngle - earthAngle, lonDeg = (lonRad * 180 / Math.PI) % 360;
-  if(lonDeg > 180) lonDeg -= 360; if(lonDeg < -180) lonDeg += 360;
   drawGroundTrack(incRad, earthAngle);
-  const mx = ((lonRad / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (latRad / (Math.PI/2)) * 100;
+  const mx = ((lonRad = satAngle - earthAngle, (lonRad / (Math.PI*2)) % 1 * 400 + 400) % 400);
+  const latRad = Math.asin(Math.sin(incRad)*Math.sin(satAngle));
+  const my = 100 - (latRad / (Math.PI/2)) * 100;
   drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
 
-  // --- JAPAN ALERT ---
+  const latDeg = latRad * 180 / Math.PI;
+  let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360;
+  if(lonDeg > 180) lonDeg -= 360; if(lonDeg < -180) lonDeg += 360;
+
   const isOverJapan = (latDeg > 24 && latDeg < 46 && lonDeg > 122 && lonDeg < 149);
   const trackingEl = document.getElementById("hudTracking");
   if(isOverJapan) {
@@ -361,7 +369,6 @@ function update() {
     if(t - lastAlertTime > 250) { playSE("japan_alert"); lastAlertTime = t; }
   } else { trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; }
 
-  // --- 3D EARTH VIEW ---
   ctx.save(); ctx.translate(300, 300); ctx.rotate(earthAngle);
   ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale);
   let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, R_EARTH * scale);
@@ -369,11 +376,9 @@ function update() {
   ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
-  // 自転マーカー
   const markerR = R_EARTH * scale, mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle);
   ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
 
-  // 都市光
   for (let c of cityLights) {
     const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle);
     if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) {
@@ -381,31 +386,26 @@ function update() {
     }
   }
 
-  // 軌道リング
   drawOrbitRingInclined(R_EARTH + 500e3, incRad, "rgba(100,150,255,1)");
   drawOrbitRingInclined(R_EARTH + 20000e3, incRad, "rgba(100,255,150,1)");
   drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)");
   drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
 
-  // 環境衛星
   for (let sat of multiSats) {
     const rr = R_EARTH + sat.alt, vv_b = Math.sqrt(G * M / rr), omega_b = (vv_b / rr) * 10, th_b = omega_b * t + sat.theta0;
     const bsx = 300 + rr * Math.cos(th_b) * scale, bsy = 300 + rr * Math.sin(th_b) * Math.cos(incRad) * scale;
     drawBackgroundSatellite(bsx, bsy, sat.alt);
   }
 
-  // 主役衛星
   const satX = 300 + r * Math.cos(satAngle) * scale, satY = 300 + r * Math.sin(satAngle) * Math.cos(incRad) * scale;
   drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt);
 
-  // 地表線
   const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
   const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
   ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
   ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
 
-  // HUD 更新
   document.getElementById("hudAlt").textContent = parseInt(slider.value).toLocaleString();
   document.getElementById("hudVel").textContent = Math.round(v * 3.6).toLocaleString();
   document.getElementById("hudMach").textContent = (v * 3.6 / 1225).toFixed(1);
