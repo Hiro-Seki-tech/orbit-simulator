@@ -55,19 +55,21 @@
   #presetBox { background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #00ffcc; }
   #presetSelect { background: #000; color: #00ffff; border: 1px solid #00ffff; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
 
-  /* 📱 縦長スマホ環境：ヒロ監督指定の「プリセット ➡️ スライダー ➡️ 地球 ➡️ 地図 ➡️ HUD」へ変身！ */
+  /* 🚀 増設された発射基地選択ボックスのスタイル */
+  #launchBox { background: rgba(255, 204, 0, 0.08); padding: 10px; border-radius: 6px; border: 1px solid #ffcc00; }
+  #launchSelect { background: #000; color: #ffcc00; border: 1px solid #ffcc00; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
+
+  /* 📱 縦長スマホ環境：ヒロ監督指定の新しい黄金オーダーへ！ */
   @media (max-width: 1024px) {
     #controlRoomContainer { display: flex; flex-direction: column; align-items: center; }
-    
-    /* 🌟 パネルの中身をコンテナの直系として扱うための魔法 */
     #leftOperationalPanel, #rightDataPanel { display: contents; }
     
-    /* 🌟 ヒロ監督指定の黄金オーダー（orderプロパティ） */
-    #presetBox { order: 1; width: 100%; margin-top: 10px; margin-bottom: 10px; } /* 1. プリセット */
-    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                /* 2. スライダー */
-    #canvas    { order: 3; }                                                /* 3. 地球（3D） */
-    #mapBox    { order: 4; width: 100%; margin-top: 15px; }                 /* 4. 2D地図 */
-    #hudBox    { order: 5; width: 100%; }                                   /* 5. HUD（データ） */
+    #presetBox { order: 1; width: 100%; margin-top: 10px; margin-bottom: 5px; }   /* 1. 衛星プリセット */
+    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                  /* 2. スライダー */
+    #canvas    { order: 3; }                                                  /* 3. 地球（メイン） */
+    #mapBox    { order: 4; width: 100%; margin-top: 15px; }                   /* 4. 2D地図 */
+    #launchBox { order: 5; width: 100%; margin-top: 5px; margin-bottom: 5px; }/* 5. 🚀発射基地メニュー（ココ！） */
+    #hudBox    { order: 6; width: 100%; }                                     /* 6. HUD（データ） */
     
     #timeBox { position: static; text-align: center; margin-bottom: 15px; }
   }
@@ -135,8 +137,20 @@
         <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
         <option value="michibiki">みちびき (準天頂衛星/日本)</option>
         <option value="himawari">ひまわり (気象衛星/日本)</option>
+        <option value="ariane6">アリアン6 (ESA/ギアナ宇宙センター)</option>
         <option value="gundam00">軌道エレベーター基部 (00)</option>
         <option value="gundam_reentry">大気圏突入限界 (RX-78 ガンダム)</option>
+      </select>
+    </div>
+
+    <div id="launchBox">
+      <select id="launchSelect">
+        <option value="none">-- SELECT LAUNCH SITE (ロケット発射基地) --</option>
+        <option value="japan">種子島宇宙センター [JAPAN] ⇒ H3</option>
+        <option value="usa">ケネディ宇宙センター [USA] ⇒ SpaceShuttle</option>
+        <option value="kazakhstan">バイコヌール宇宙基地 [KAZAKHSTAN] ⇒ Soyuz</option>
+        <option value="france">ギアナ宇宙センター [FRANCE-GUIANA] ⇒ Ariane</option>
+        <option value="jaburo">地球連邦軍地下基地ジャブロー [AMAZON] ⇒ WhiteBase</option>
       </select>
     </div>
 
@@ -154,6 +168,7 @@ const scale = 8e-6;
 const slider = document.getElementById("altSlider"), altLabel = document.getElementById("altLabel");
 const incSlider = document.getElementById("incSlider"), incLabel = document.getElementById("incLabel");
 const presetSelect = document.getElementById("presetSelect");
+const launchSelect = document.getElementById("launchSelect"); // セレクター取得
 
 const satellitePresets = {
   iss: { alt: 420, inc: 52, type: "iss" },
@@ -162,18 +177,66 @@ const satellitePresets = {
   daichi: { alt: 666, inc: 98, type: "daichi" },       
   michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
   himawari: { alt: 35786, inc: 0, type: "himawari" },
-  gundam00: { alt: 35786, inc: 0, type: "gundam00" },    
+  ariane6: { alt: 400, inc: 5, type: "ariane" },
+  gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
   gundam_reentry: { alt: 150, inc: 28, type: "gundam" }
 };
 let currentMissionType = "custom", t = 0, audioEnabled = false, audioCtx = null;
 let lastAlertTime = 0, nextStarSoundTime = 0, spaceHum = null;
 
+let elevatorAlt = 0;       
+let elevatorDirection = 1; 
+const elevatorSpeed = 150; 
+
+// 現在選択されている発射基地のIDキー
+let selectedLaunchSite = "none";
+
 // ====== 2. WORLD MAP DATA ======
-const landData = [
-  {x: 33, y: 26, w: 40, h: 26}, {x: 53, y: 53, w: 26, h: 40},
-  {x: 186, y: 20, w: 120, h: 40}, {x: 200, y: 60, w: 33, h: 46},
-  {x: 320, y: 80, w: 33, h: 26}, {x: 316, y: 36, w: 3, h: 5},
+const detailedLandmasses = [
+  // 1. ユーラシア大陸 〜 ヨーロッパ 〜 アフリカ大陸
+  [
+    {x: 0, y: 15}, {x: 35, y: 15}, {x: 75, y: 25}, {x: 105, y: 20}, {x: 120, y: 30}, 
+    {x: 148, y: 35}, {x: 150, y: 50}, {x: 145, y: 65}, {x: 160, y: 75}, 
+    {x: 145, y: 75}, {x: 130, y: 95}, {x: 125, y: 110}, 
+    {x: 110, y: 90}, {x: 95, y: 92}, {x: 90, y: 75}, 
+    {x: 88, y: 95}, {x: 92, y: 115}, {x: 88, y: 135}, {x: 75, y: 155}, {x: 65, y: 155}, 
+    {x: 55, y: 130}, {x: 42, y: 105}, {x: 28, y: 95}, {x: 30, y: 78}, {x: 42, y: 75}, 
+    {x: 35, y: 70}, {x: 18, y: 68}, {x: 20, y: 58}, 
+    {x: 10, y: 52}, {x: 18, y: 44}, {x: 30, y: 46}, 
+    {x: 45, y: 52}, {x: 55, y: 62}, {x: 40, y: 68}, 
+    {x: 0, y: 62} 
+  ],
+  // 2. 北アメリカ大陸
+  [
+    {x: 220, y: 15}, {x: 250, y: 20}, {x: 290, y: 25}, {x: 310, y: 35}, 
+    {x: 300, y: 65}, {x: 292, y: 73}, 
+    {x: 275, y: 85}, {x: 265, y: 95}, 
+    {x: 255, y: 75}, {x: 240, y: 55}, {x: 215, y: 40} 
+  ],
+  // 3. 南アメリカ大陸
+  [
+    {x: 275, y: 100}, {x: 295, y: 103}, {x: 310, y: 110}, {x: 320, y: 125}, {x: 295, y: 170}, 
+    {x: 285, y: 170}, {x: 275, y: 135}, {x: 270, y: 110} 
+  ],
+  // 4. オーストラリア大陸
+  [
+    {x: 135, y: 135}, {x: 155, y: 130}, {x: 165, y: 140}, {x: 160, y: 160},
+    {x: 145, y: 162}, {x: 130, y: 150}
+  ],
+  // 5. 独立した日本列島
+  [
+    {x: 156, y: 45}, {x: 160, y: 43}, {x: 162, y: 47}, {x: 158, y: 55}, {x: 155, y: 56}, {x: 154, y: 50}
+  ]
 ];
+
+// ロケット発射基地辞書データ（アマゾン・ジャブローを先行追加！）
+const rocketBases = {
+  japan:      { name: "JAPAN (Tanegashima)", x: 156, y: 55, rocket: "H3" },
+  usa:        { name: "USA (Cape Canaveral)", x: 291, y: 70, rocket: "SpaceShuttle" },
+  kazakhstan: { name: "KAZAKHSTAN (Baikonur)", x: 95, y: 43, rocket: "Soyuz" },
+  france:     { name: "FRANCE-GUIANA (Kourou)", x: 298, y: 108, rocket: "Ariane" },
+  jaburo:     { name: "AMAZON (Jaburo Base)", x: 295, y: 122, rocket: "WhiteBase" }
+};
 
 const stars = [];
 for (let i = 0; i < 250; i++) {
@@ -247,7 +310,7 @@ function playSE(type) {
   }
   const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
   if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); }
-  else if(type==="gundam"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); }
+  else if(type==="gundam" || type==="ariane" || type==="gundam00" || type==="rocket_select"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); }
   else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); }
   gain.gain.linearRampToValueAtTime(0.0001, now+0.4); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+0.4);
 }
@@ -275,10 +338,35 @@ function drawOrbitRingInclined(r, incRad, color) {
 
 function drawWorldMap() {
   mctx.fillStyle = "#000810"; mctx.fillRect(0,0,400,200);
-  mctx.strokeStyle = "rgba(0, 255, 204, 0.1)"; mctx.lineWidth = 1;
+  
+  mctx.strokeStyle = "rgba(0, 255, 204, 0.08)"; mctx.lineWidth = 1;
   for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
   for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
-  mctx.fillStyle = "rgba(0, 255, 204, 0.25)"; landData.forEach(l => { mctx.fillRect(l.x, l.y, l.w, l.h); });
+  
+  mctx.fillStyle = "rgba(0, 255, 204, 0.22)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.45)"; mctx.lineWidth = 1.5;
+  detailedLandmasses.forEach(polygon => {
+    if (polygon.length === 0) return;
+    mctx.beginPath(); mctx.moveTo(polygon[0].x, polygon[0].y);
+    for (let i = 1; i < polygon.length; i++) { mctx.lineTo(polygon[i].x, polygon[i].y); }
+    mctx.closePath(); mctx.fill(); mctx.stroke();
+  });
+
+  // すべての発射基地に黄色いターゲット点をプロット
+  for (let key in rocketBases) {
+    const base = rocketBases[key];
+    mctx.beginPath(); mctx.fillStyle = "#ffcc00"; mctx.arc(base.x, base.y, 3, 0, Math.PI * 2); mctx.fill();
+    mctx.beginPath(); mctx.strokeStyle = "rgba(255, 204, 0, 0.3)"; mctx.arc(base.x, base.y, 6, 0, Math.PI * 2); mctx.stroke();
+  }
+
+  // 🚀 [NEW] セレクターで基地が選ばれていたら、その場所にロケット絵文字を表示！
+  if (selectedLaunchSite !== "none") {
+    const activeBase = rocketBases[selectedLaunchSite];
+    mctx.font = "14px Arial";
+    mctx.textAlign = "center";
+    mctx.textBaseline = "middle";
+    // 文字のズレを防ぐため、絵文字を中心に綺麗にプロット
+    mctx.fillText("🚀", activeBase.x, activeBase.y - 2);
+  }
 }
 
 function drawGroundTrack(incRad, earthAngle) {
@@ -293,7 +381,7 @@ function drawGroundTrack(incRad, earthAngle) {
 
 function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) {
   targetCtx.save(); targetCtx.translate(x, y);
-  if(is2D) targetCtx.scale(1.5, 1.5); // 監督指示：2D地図上で巨大化
+  if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); }
 
   switch(type) {
     case "iss":
@@ -315,8 +403,14 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
     case "himawari":
       targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke();
       break;
+    case "ariane":
+      targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -12, 6, 16);
+      targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-5, -2, 2, 10); targetCtx.fillRect(3, -2, 2, 10);
+      targetCtx.fillStyle = "red"; targetCtx.fillRect(-1, 4, 2, 3);
+      break;
     case "gundam00":
-      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 10, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.7)"; targetCtx.lineWidth = 3; targetCtx.beginPath(); targetCtx.arc(0, 0, 18, 0, Math.PI * 2); targetCtx.stroke();
+      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill();
+      targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12);
       break;
     case "gundam":
       targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6);
@@ -347,10 +441,17 @@ function update() {
   drawStars(); drawWorldMap();
   if (audioEnabled && t >= nextStarSoundTime) { playStarSound(); nextStarSoundTime = t + 180 + Math.random()*180; }
 
+  if (currentMissionType === "gundam00") {
+    elevatorAlt += elevatorSpeed * elevatorDirection;
+    if (elevatorAlt >= 35786) { elevatorAlt = 35786; elevatorDirection = -1; } 
+    else if (elevatorAlt <= 0) { elevatorAlt = 0; elevatorDirection = 1; }
+    slider.value = Math.round(elevatorAlt);
+  }
+
   const alt = slider.value * 1000, incDeg = incSlider.value, incRad = incDeg * Math.PI/180;
   altLabel.textContent = slider.value + " km"; incLabel.textContent = incDeg + "°";
   const r = R_EARTH + alt, v = Math.sqrt(G*M / r), omega_sat = (v/r)*10, earthAngle = (2*Math.PI/86164)*10*t;
-  const satAngle = omega_sat * t;
+  const satAngle = (currentMissionType === "gundam00") ? earthAngle : omega_sat * t;
 
   drawGroundTrack(incRad, earthAngle);
   const mx = ((lonRad = satAngle - earthAngle, (lonRad / (Math.PI*2)) % 1 * 400 + 400) % 400);
@@ -362,12 +463,21 @@ function update() {
   let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360;
   if(lonDeg > 180) lonDeg -= 360; if(lonDeg < -180) lonDeg += 360;
 
-  const isOverJapan = (latDeg > 24 && latDeg < 46 && lonDeg > 122 && lonDeg < 149);
+  // HUDトラッキング表示の動的切り替え
   const trackingEl = document.getElementById("hudTracking");
-  if(isOverJapan) {
+  const isOverJapan = (latDeg > 24 && latDeg < 46 && lonDeg > 122 && lonDeg < 149);
+  
+  if (selectedLaunchSite !== "none") {
+    // 基地がロックオンされている場合の情報表示
+    const bName = rocketBases[selectedLaunchSite].rocket;
+    trackingEl.textContent = `🚀 LOCK: ${bName} LAUNCHER`;
+    trackingEl.style.color = "#ffcc00";
+  } else if(isOverJapan) {
     trackingEl.textContent = "⚠️ OVER JAPAN"; trackingEl.style.color = "#f33";
     if(t - lastAlertTime > 250) { playSE("japan_alert"); lastAlertTime = t; }
-  } else { trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; }
+  } else { 
+    trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; 
+  }
 
   ctx.save(); ctx.translate(300, 300); ctx.rotate(earthAngle);
   ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale);
@@ -391,6 +501,18 @@ function update() {
   drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)");
   drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
 
+  if (currentMissionType === "gundam00") {
+    const geoR = R_EARTH + 35786e3;
+    const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle);
+    const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale;
+    ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
+    ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
+
+    ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.shadowBlur = 15; ctx.shadowColor = "cyan";
+    ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
   for (let sat of multiSats) {
     const rr = R_EARTH + sat.alt, vv_b = Math.sqrt(G * M / rr), omega_b = (vv_b / rr) * 10, th_b = omega_b * t + sat.theta0;
     const bsx = 300 + rr * Math.cos(th_b) * scale, bsy = 300 + rr * Math.sin(th_b) * Math.cos(incRad) * scale;
@@ -400,23 +522,26 @@ function update() {
   const satX = 300 + r * Math.cos(satAngle) * scale, satY = 300 + r * Math.sin(satAngle) * Math.cos(incRad) * scale;
   drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt);
 
-  const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
-  const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
-  ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-  ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
-  ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+  if (currentMissionType !== "gundam00") {
+    const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
+    const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
+    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+  }
 
   document.getElementById("hudAlt").textContent = parseInt(slider.value).toLocaleString();
-  document.getElementById("hudVel").textContent = Math.round(v * 3.6).toLocaleString();
-  document.getElementById("hudMach").textContent = (v * 3.6 / 1225).toFixed(1);
+  document.getElementById("hudVel").textContent = (currentMissionType === "gundam00") ? "ELEV-MOTORING" : Math.round(v * 3.6).toLocaleString();
+  document.getElementById("hudMach").textContent = (currentMissionType === "gundam00") ? "VARIABLE" : (v * 3.6 / 1225).toFixed(1);
   const pS = (2*Math.PI*r)/v, pH = Math.floor(pS/3600), pM = Math.floor((pS%3600)/60);
-  document.getElementById("hudPeriod").textContent = pH > 0 ? `${pH}h ${pM}m` : `${pM}m`;
+  document.getElementById("hudPeriod").textContent = (currentMissionType === "gundam00") ? "24h (SYNCED)" : (pH > 0 ? `${pH}h ${pM}m` : `${pM}m`);
   
   const statusEl = document.getElementById("hudStatus");
-  if (slider.value < 200) { statusEl.textContent = "⚠️ RE-ENTRY DANGER"; statusEl.style.color = "#f33"; }
-  else if (slider.value == 35786 && incDeg == 0) { statusEl.textContent = "🔒 GEO SYNC LOCK"; statusEl.style.color = "yellow"; }
-  else if (slider.value < 2000) { statusEl.textContent = "NOMINAL (LEO)"; statusEl.style.color = "#66aaff"; }
-  else if (slider.value < 35786) { statusEl.textContent = "NOMINAL (MEO)"; statusEl.style.color = "#66ff99"; }
+  if (currentMissionType === "gundam00") { statusEl.textContent = `🛗 ACTIVE ASCENT (${elevatorDirection > 0 ? "👉UP" : "👈DOWN"})`; statusEl.style.color = "cyan"; } 
+  else if (slider.value < 200) { statusEl.textContent = "⚠️ RE-ENTRY DANGER"; statusEl.style.color = "#f33"; } 
+  else if (slider.value == 35786 && incDeg == 0) { statusEl.textContent = "🔒 GEO SYNC LOCK"; statusEl.style.color = "yellow"; } 
+  else if (slider.value < 2000) { statusEl.textContent = "NOMINAL (LEO)"; statusEl.style.color = "#66aaff"; } 
+  else if (slider.value < 35786) { statusEl.textContent = "NOMINAL (MEO)"; statusEl.style.color = "#66ff99"; } 
   else { statusEl.textContent = "NOMINAL (HEO)"; statusEl.style.color = "#ffaa00"; }
 
   const hText = Math.floor(t/3600), mText = Math.floor((t%3600)/60), sText = Math.floor(t%60);
@@ -427,10 +552,21 @@ function update() {
 
 presetSelect.addEventListener("change", () => {
   const m = presetSelect.value;
-  if(m !== "custom") { slider.value = satellitePresets[m].alt; incSlider.value = satellitePresets[m].inc; currentMissionType = satellitePresets[m].type; }
-  else { currentMissionType = "custom"; }
+  if(m !== "custom") { 
+    slider.value = satellitePresets[m].alt; incSlider.value = satellitePresets[m].inc; currentMissionType = satellitePresets[m].type;
+    if(m === "gundam00") { elevatorAlt = 0; elevatorDirection = 1; }
+  } else { currentMissionType = "custom"; }
   playSE(currentMissionType);
 });
+
+// 🚀 [NEW] 発射基地が選択された時のリスナー
+launchSelect.addEventListener("change", () => {
+  selectedLaunchSite = launchSelect.value;
+  if(selectedLaunchSite !== "none") {
+    playSE("rocket_select"); // 基地ロックオン用の音声を再生
+  }
+});
+
 slider.addEventListener("input", () => { presetSelect.value = "custom"; if(currentMissionType !== "custom") { currentMissionType = "custom"; playSE("custom"); } });
 incSlider.addEventListener("input", () => { presetSelect.value = "custom"; if(currentMissionType !== "custom") { currentMissionType = "custom"; playSE("custom"); } });
 
