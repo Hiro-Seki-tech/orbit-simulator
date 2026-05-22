@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Earth & Satellite Simulator v5.4.2 (Director's Cut Edition)</title>
+<title>Earth & Satellite Simulator v5.5.0 (Director's Cut V14)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -42,7 +42,6 @@
   #presetBox { background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #00ffcc; }
   #presetSelect { background: #000; color: #00ffff; border: 1px solid #00ffff; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
 
-  /* 🚀 [NEW] 下のメニューのデザインを、各ロケットのシルエットを描画する「LAUNCH SITE SELECTOR」へと洗練！ */
   #launchBox { background: rgba(255, 204, 0, 0.08); padding: 10px; border-radius: 6px; border: 1px solid #ffcc00; }
   #launchSelect { background: #000; color: #ffcc00; border: 1px solid #ffcc00; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
 
@@ -61,7 +60,7 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">STRATEGIC MISSION CONTROL v5.4.2</h2>
+<h2 style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">STRATEGIC MISSION CONTROL v5.5.0</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
@@ -116,6 +115,8 @@
         <option value="hubble">ハッブル宇宙望遠鏡</option>
         <option value="starlink">スターリンク衛星 (SpaceX)</option>
         <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
+        <option value="gps">GPS Block III (次世代測位衛星/USA) [MEO]</option>
+        <option value="galileo">Galileo (欧州測位衛星システム/EU) [MEO]</option>
         <option value="michibiki">みちびき (準天頂衛星/日本)</option>
         <option value="himawari">ひまわり (気象衛星/日本)</option>
         <option value="gundam00">軌道エレベーター基部 (00)</option>
@@ -154,6 +155,8 @@ const satellitePresets = {
   hubble: { alt: 525, inc: 29, type: "hubble" },
   starlink: { alt: 550, inc: 53, type: "starlink" },
   daichi: { alt: 666, inc: 98, type: "daichi" },       
+  gps: { alt: 20200, inc: 55, type: "gps" },         // [NEW] MEOを補強！
+  galileo: { alt: 23222, inc: 56, type: "galileo" }, // [NEW] MEOを補強！
   michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
   himawari: { alt: 35786, inc: 0, type: "himawari" },
   gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
@@ -168,18 +171,12 @@ const elevatorSpeed = 150;
 
 let selectedLaunchSite = "none";
 
-// ====== 2. WORLD MAP DATA (ディテールアップ版) ======
-// (中略 - 既存の世界地図多角形データはそのまま維持)
+// ====== 2. WORLD MAP DATA ======
 const detailedLandmasses = [
-  // ユーラシア・アフリカ大陸
   [{x: 0, y: 15}, {x: 35, y: 15}, {x: 75, y: 25}, {x: 105, y: 20}, {x: 120, y: 30}, {x: 148, y: 35}, {x: 150, y: 50}, {x: 145, y: 65}, {x: 160, y: 75}, {x: 145, y: 75}, {x: 130, y: 95}, {x: 125, y: 110}, {x: 110, y: 90}, {x: 95, y: 92}, {x: 90, y: 75}, {x: 88, y: 95}, {x: 92, y: 115}, {x: 88, y: 135}, {x: 75, y: 155}, {x: 65, y: 155}, {x: 55, y: 130}, {x: 42, y: 105}, {x: 28, y: 95}, {x: 30, y: 78}, {x: 42, y: 75}, {x: 35, y: 70}, {x: 18, y: 68}, {x: 20, y: 58}, {x: 10, y: 52}, {x: 18, y: 44}, {x: 30, y: 46}, {x: 45, y: 52}, {x: 55, y: 62}, {x: 40, y: 68}, {x: 0, y: 62}],
-  // 北アメリカ大陸
   [{x: 220, y: 15}, {x: 250, y: 20}, {x: 290, y: 25}, {x: 310, y: 35}, {x: 300, y: 65}, {x: 292, y: 73}, {x: 275, y: 85}, {x: 265, y: 95}, {x: 255, y: 75}, {x: 240, y: 55}, {x: 215, y: 40}],
-  // 南アメリカ大陸
   [{x: 275, y: 100}, {x: 295, y: 103}, {x: 310, y: 110}, {x: 320, y: 125}, {x: 295, y: 170}, {x: 285, y: 170}, {x: 275, y: 135}, {x: 270, y: 110}],
-  // オーストラリア大陸
   [{x: 135, y: 135}, {x: 155, y: 130}, {x: 165, y: 140}, {x: 160, y: 160}, {x: 145, y: 162}, {x: 130, y: 150}],
-  // 日本列島
   [{x: 156, y: 45}, {x: 160, y: 43}, {x: 162, y: 47}, {x: 158, y: 55}, {x: 155, y: 56}, {x: 154, y: 50}]
 ];
 
@@ -207,7 +204,7 @@ function toggleAudio(event) { if (event) event.stopPropagation(); const btn = do
 function playStarSound() { if(!audioEnabled) return; const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(1000 + Math.random()*500, audioCtx.currentTime); gain.gain.setValueAtTime(0.06, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 3.0); }
 function playSE(type) { if(!audioEnabled || !audioCtx) return; const now = audioCtx.currentTime; if(type === "japan_alert") { for(let i=0; i<3; i++) { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.frequency.setValueAtTime(1800, now + i*0.15); gain.gain.setValueAtTime(0.08, now + i*0.15); gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + i*0.15); osc.stop(now + i*0.15 + 0.08); } return; } const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } else if(type==="gundam" || type==="gundam00" || type==="rocket_select"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); } gain.gain.linearRampToValueAtTime(0.0001, now+0.4); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+0.4); }
 
-// ====== 4. DRAWING CORE (ディテールアップ版) ======
+// ====== 4. DRAWING CORE ======
 function drawStars() { for (let s of stars) { const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.fillRect(s.x, s.y, 2, 2); } }
 function drawOrbitRingInclined(r, incRad, color) { ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += 0.02) { const x3 = r * Math.cos(a), y3 = r * Math.sin(a) * Math.cos(incRad), z3 = r * Math.sin(a) * Math.sin(incRad); const sx = 300 + x3 * scale, sy = 300 + y3 * scale * (1 - z3 / r * 0.4); const alpha = (z3 < 0) ? 0.25 : 1.0; const rgba = color.replace("1)", alpha + ")"); if (a === 0) { ctx.beginPath(); ctx.strokeStyle = rgba; ctx.moveTo(sx, sy); } else { ctx.strokeStyle = rgba; ctx.lineTo(sx, sy); } } ctx.stroke(); }
 
@@ -217,7 +214,7 @@ function drawWorldMap() {
   for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
   for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
   
-  mctx.fillStyle = "rgba(0, 255, 204, 0.22)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.45)"; mctx.lineWidth = 1.5;
+  mctx.fillStyle = "rgba(0, 255, 204, 0.15)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.lineWidth = 1.2;
   detailedLandmasses.forEach(polygon => {
     if (polygon.length === 0) return;
     mctx.beginPath(); mctx.moveTo(polygon[0].x, polygon[0].y);
@@ -225,66 +222,121 @@ function drawWorldMap() {
     mctx.closePath(); mctx.fill(); mctx.stroke();
   });
 
-  // すべての発射基地ターゲット（●）をプロット
+  // すべての発射基地にベースとなるレーダーサークルをプロット
   for (let key in rocketBases) {
     const base = rocketBases[key];
-    mctx.beginPath(); mctx.fillStyle = "#ffcc00"; mctx.arc(base.x, base.y, 3, 0, Math.PI * 2); mctx.fill();
-    mctx.beginPath(); mctx.strokeStyle = "rgba(255, 204, 0, 0.3)"; mctx.arc(base.x, base.y, 6, 0, Math.PI * 2); mctx.stroke();
+    mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
   }
 
-  // 🚀 [NEW] 発射基地がロックオンされたら、デフォルトの🚀絵文字ではなく、
-  // ヒロ監督指定の「各ロケット独自のベクターシルエット」を黄金のネオンで描画する！
+  // 🎨 [NEW-V14] ロケットたちを、線画から色鮮やかな「ドット絵風・司令室カスタムグラフィック」へ！
   if (selectedLaunchSite !== "none") {
     const activeBase = rocketBases[selectedLaunchSite];
-    const bType = activeBase.rocket;
     
     mctx.save();
-    mctx.translate(activeBase.x, activeBase.y); // 基地の座標を原点にする魔法
-    mctx.scale(0.7, 0.7); // 2D地図に合わせてシルエットを少しコンパクトに
-    mctx.strokeStyle = "#ffcc00"; // 黄金のサイバーネオンライン
-    mctx.lineWidth = 1.2;
-    mctx.lineJoin = "round";
-    mctx.beginPath();
+    mctx.translate(activeBase.x, activeBase.y);
+    
+    // レーダーロックオン枠
+    mctx.strokeStyle = "#ff3333"; mctx.lineWidth = 1;
+    mctx.strokeRect(-12, -20, 24, 34);
+    mctx.beginPath(); mctx.arc(0, -3, 15, 0, Math.PI*2); mctx.strokeStyle = "rgba(255,51,51,0.2)"; mctx.stroke();
 
     switch(selectedLaunchSite) {
-      case "japan": // H3：細身で美しい2段ロケットのシルエット
-        mctx.moveTo(-2, -15); mctx.lineTo(2, -15); mctx.lineTo(3, 5); mctx.lineTo(5, 7); // フェアリングから第2段
-        mctx.lineTo(5, 12); mctx.lineTo(-5, 12); mctx.lineTo(-5, 7); mctx.lineTo(-3, 5); // 第1段からメインエンジン
-        mctx.lineTo(-2, -15); // パスを閉じる
+      case "japan": // 🚀 H3ロケット：純白の美しいコア＋サイドブースター＋青ライン
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2, -16, 4, 24); // メインコア
+        mctx.fillStyle = "#00aaff"; mctx.fillRect(-2, -6, 4, 1);  // 機体ブルーライン
+        mctx.fillStyle = "#dddddd"; mctx.fillRect(-4, 0, 2, 8);   // 固体ロケットブースター左
+        mctx.fillRect(2, 0, 2, 8);    // 固体ロケットブースター右
+        mctx.fillStyle = "#ff6600"; mctx.fillRect(-1, 8, 2, 2);   // エンジンノズル
         break;
-      case "usa": // SpaceShuttle：オービターと外部燃料タンクの独特な形
-        mctx.moveTo(0, -14); mctx.lineTo(3, -11); mctx.lineTo(3, 2); mctx.lineTo(8, 7); // オービター機首から翼
-        mctx.lineTo(8, 12); mctx.lineTo(3, 11); mctx.lineTo(3, 14); // 翼後端からメインエンジン、タンク底
-        mctx.lineTo(-3, 14); mctx.lineTo(-3, 11); mctx.lineTo(-8, 12); // 反対側の翼後端
-        mctx.lineTo(-8, 7); mctx.lineTo(-3, 2); mctx.lineTo(-3, -11); mctx.lineTo(0, -14);
+        
+      case "usa": // 🚀 スペースシャトル：オレンジの外部タンクに白黒のオービターが横にドッキングする機能美！
+        mctx.fillStyle = "#d2691e"; mctx.fillRect(-3, -15, 6, 23); // 巨大なオレンジ外部燃料タンク(ET)
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-5, -7, 2, 14);  // 左固体補助ロケット(SRB)
+        // 右側に合体する白いオービター(スペースシャトル本体)
+        mctx.fillRect(3, -4, 3, 10);   // オービターキャビン
+        mctx.fillStyle = "#000000"; mctx.fillRect(3, 2, 5, 3);    // 主翼（耐熱タイル黒）
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(3, -6, 2, 2);   // 機首のホワイト
         break;
-      case "kazakhstan": // Soyuz：あの特徴的な4本の「クラスターブースター」の形を具現化！
-        mctx.moveTo(-1, -16); mctx.lineTo(1, -16); mctx.lineTo(1.5, -4); // フェアリング
-        mctx.lineTo(4, 3); mctx.lineTo(5, 13); mctx.lineTo(2.5, 13); mctx.lineTo(1.5, 4); // 右側クラスターブースター
-        mctx.lineTo(1, 4); mctx.lineTo(1, 14); mctx.lineTo(-1, 14); mctx.lineTo(-1, 4); // メインコア
-        mctx.lineTo(-1.5, 4); mctx.lineTo(-2.5, 13); mctx.lineTo(-5, 13); mctx.lineTo(-4, 3); // 左側クラスターブースター
-        mctx.lineTo(-1.5, -4); mctx.lineTo(-1, -16);
+        
+      case "kazakhstan": // 🚀 ソユーズ：渋いミリタリーグリーン＋根本が4つに広がるクラスター形状
+        mctx.fillStyle = "#557755"; mctx.fillRect(-1.5, -17, 3, 25); // メインコア
+        mctx.fillStyle = "#446644"; 
+        mctx.fillRect(-3.5, -1, 2, 9);   // 周囲を取り囲むクラスターブースター（左）
+        mctx.fillRect(1.5, -1, 2, 9);    // 周囲を取り囲むクラスターブースター（右）
+        mctx.fillStyle = "#cc5500"; mctx.fillRect(-2, 8, 4, 1);     // 点火口バーニア
         break;
-      case "france": // Ariane6：シャープで力強い、欧州の最新鋭大型ロケット
-        mctx.moveTo(-3, -18); mctx.lineTo(3, -18); mctx.lineTo(4, 5); mctx.lineTo(6, 7); // フェアリングから第2段
-        mctx.lineTo(6, 15); mctx.lineTo(4, 16); mctx.lineTo(3, 15); mctx.lineTo(1, 16); // 第1段からメインエンジン、底
-        mctx.lineTo(-1, 16); mctx.lineTo(-3, 15); mctx.lineTo(-4, 16); mctx.lineTo(-6, 15); // 反対側
-        mctx.lineTo(-6, 7); mctx.lineTo(-4, 5); mctx.lineTo(-3, -18);
+        
+      case "france": // 🚀 アリアン6：漆黒のフェアリング＋スタイリッシュなユーロブルーのブースター
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2.5, -14, 5, 22); // コア機体
+        mctx.fillStyle = "#111111"; mctx.fillRect(-2.5, -14, 5, 4);  // 特徴的な黒いノーズフェアリング
+        mctx.fillStyle = "#0044cc"; mctx.fillRect(-4.5, 0, 2, 8);   // 鮮やかなユーロブルーのサイドブースター左
+        mctx.fillRect(2.5, 0, 2, 8);    // サイドブースター右
         break;
-      case "jaburo": // WhiteBase：ジャブロー基地に浮かび上がる、あの戦艦のシルエット（布石）
-        mctx.moveTo(0, -8); mctx.lineTo(14, -4); mctx.lineTo(18, 0); mctx.lineTo(14, 4); // 艦首から主砲デッキ
-        mctx.lineTo(12, 10); mctx.lineTo(4, 12); mctx.lineTo(-4, 12); // カタパルトデッキから艦尾
-        mctx.lineTo(-12, 10); mctx.lineTo(-14, 4); mctx.lineTo(-18, 0); // 反対側
-        mctx.lineTo(-14, -4); mctx.lineTo(0, -8);
+        
+      case "jaburo": // 🛸 ホワイトベース：赤・白・青のトリコロール！左右のカタパルトがせり出した「木馬」形状
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-3, -10, 6, 16);  // 中央船体・メインブリッジ
+        mctx.fillStyle = "#ff3333"; mctx.fillRect(-3, -2, 6, 3);    // 船体中央の赤いアクセントプレート
+        mctx.fillStyle = "#ffffff"; 
+        mctx.fillRect(-10, -5, 4, 15);   // 左舷モビルスーツ・カタパルトデッキ
+        mctx.fillRect(6, -5, 4, 15);    // 右舷モビルスーツ・カタパルトデッキ
+        mctx.fillStyle = "#3366cc"; mctx.fillRect(-10, 5, 4, 2);    // カタパルト先端のブルーハッチ
+        mctx.fillRect(6, 5, 4, 2);
+        mctx.fillStyle = "#ffcc00"; mctx.fillRect(-1, -12, 2, 2);   // メインアンテナ黄色
         break;
     }
-    mctx.stroke();
     mctx.restore();
   }
 }
 
 function drawGroundTrack(incRad, earthAngle) { mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]); for(let i=0; i<400; i+=4) { const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle; const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100; if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my); } mctx.stroke(); mctx.setLineDash([]); }
-function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { targetCtx.save(); targetCtx.translate(x, y); if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } switch(type) { case "iss": targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); break; case "hubble": targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); break; case "starlink": targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); break; case "daichi": targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); break; case "michibiki": targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); break; case "himawari": targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); break; case "gundam00": targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); break; case "gundam": targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6); break; default: let coreColor = "yellow"; if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; } targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); targetCtx.fillRect(6, -2, 10, 4); targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2); targetCtx.fillStyle = coreColor; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, 4, 2, 2); break; } targetCtx.restore(); }
+
+function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
+  targetCtx.save(); targetCtx.translate(x, y); 
+  if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
+  
+  switch(type) { 
+    case "iss": 
+      targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
+      break; 
+    case "hubble": 
+      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
+      break; 
+    case "starlink": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
+      break; 
+    case "daichi": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
+      break; 
+    case "gps": // 🛰️ [NEW] 次世代GPSブロックIII：輝くゴールドコアに大型青パドルを十字展開！
+      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); // コア
+      targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); // ソーラーパドル左
+      targetCtx.fillRect(4, -1, 11, 2);   // ソーラーパドル右
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  // 高利得アンテナ
+      break;
+    case "galileo": // 🛰️ [NEW] 欧州ガリレオ：シルバーの細身ボディ＋超ロングなパドルの翼
+      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); // メインシルバーボディ
+      targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); // 超ロングパドル左
+      targetCtx.fillRect(3, -1.5, 15, 3);  // 超ロングパドル右
+      break;
+    case "michibiki": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
+      break; 
+    case "himawari": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
+      break; 
+    case "gundam00": 
+      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); 
+      break; 
+    case "gundam": 
+      targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6); 
+      break; 
+    default: 
+      let coreColor = "yellow"; if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; } targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); targetCtx.fillRect(6, -2, 10, 4); targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2); targetCtx.fillStyle = coreColor; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, 4, 2, 2); 
+      break; 
+  } 
+  targetCtx.restore(); 
+}
+
 function drawBackgroundSatellite(x, y, altitude) { if (altitude < 2000e3) { ctx.fillStyle = "#ff3333"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } else if (altitude < 35786e3) { ctx.fillStyle = "#33ff33"; ctx.fillRect(x - 4, y - 1.5, 8, 3); } else { ctx.fillStyle = "#ffff33"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } }
 
 // ====== 5. MAIN LOOP ======
@@ -320,7 +372,7 @@ function update() {
   
   if (selectedLaunchSite !== "none") {
     const bName = rocketBases[selectedLaunchSite].rocket;
-    trackingEl.textContent = `🚀 LOCK: ${bName} LAUNCHER`; trackingEl.style.color = "#ffcc00";
+    trackingEl.textContent = `🚀 LOCK: ${bName} BASE`; trackingEl.style.color = "#ffcc00";
   } else if(isOverJapan) {
     trackingEl.textContent = "⚠️ OVER JAPAN"; trackingEl.style.color = "#f33";
     if(t - lastAlertTime > 250) { playSE("japan_alert"); lastAlertTime = t; }
@@ -335,7 +387,10 @@ function update() {
 
   const markerR = R_EARTH * scale, mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
   for (let c of cityLights) { const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) { ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; ctx.fillRect(cx_light, cy_light, 2, 2); } }
-  drawOrbitRingInclined(R_EARTH + 500e3, incRad, "rgba(100,150,255,1)"); drawOrbitRingInclined(R_EARTH + 20000e3, incRad, "rgba(100,255,150,1)"); drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)"); drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
+  drawOrbitRingInclined(R_EARTH + 500e3, incRad, "rgba(100,150,255,1)"); 
+  drawOrbitRingInclined(R_EARTH + 22000e3, incRad, "rgba(100,255,150,1)"); // MEO中軌道ライン
+  drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)"); 
+  drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
 
   if (currentMissionType === "gundam00") {
     const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle); const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale; ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.shadowBlur = 15; ctx.shadowColor = "cyan"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
