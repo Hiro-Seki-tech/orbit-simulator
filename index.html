@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Earth & Satellite Simulator v5.5.0 (Director's Cut V14)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v5.5 (v5.5.1 Director's Cut)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -60,11 +60,11 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">STRATEGIC MISSION CONTROL v5.5.0</h2>
+<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v5.5</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
-  <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GPS・測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">コア緑点灯</span></div>
+  <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">コア緑点灯</span></div>
   <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・通信） ⇒ <span style="color:#ffff33; font-weight:bold;">コア黄点灯</span></div>
 </div>
 
@@ -115,8 +115,10 @@
         <option value="hubble">ハッブル宇宙望遠鏡</option>
         <option value="starlink">スターリンク衛星 (SpaceX)</option>
         <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
-        <option value="gps">GPS Block III (次世代測位衛星/USA) [MEO]</option>
-        <option value="galileo">Galileo (欧州測位衛星システム/EU) [MEO]</option>
+        <option value="gps">GPS Block III (アメリカ/次世代測位) [MEO]</option>
+        <option value="galileo">Galileo (欧州連合/民間測位) [MEO]</option>
+        <option value="beidou">北斗 / BDS (中国/全球測位システム) [MEO]</option>
+        <option value="glonass">GLONASS (ロシア/ミリタリー測位) [MEO]</option>
         <option value="michibiki">みちびき (準天頂衛星/日本)</option>
         <option value="himawari">ひまわり (気象衛星/日本)</option>
         <option value="gundam00">軌道エレベーター基部 (00)</option>
@@ -131,7 +133,7 @@
         <option value="usa">ケネディ宇宙センター [USA] ⇒ SpaceShuttle</option>
         <option value="kazakhstan">バイコヌール宇宙基地 [KAZAKHSTAN] ⇒ Soyuz</option>
         <option value="france">ギアナ宇宙センター [FRANCE-GUIANA] ⇒ Ariane6</option>
-        <option value="jaburo">地球連邦軍地下基地ジャブロー [AMAZON] ⇒ WhiteBase</option>
+        <option value="jaburo">地球連軍地下基地ジャブロー [AMAZON] ⇒ WhiteBase</option>
       </select>
     </div>
   </div>
@@ -155,8 +157,10 @@ const satellitePresets = {
   hubble: { alt: 525, inc: 29, type: "hubble" },
   starlink: { alt: 550, inc: 53, type: "starlink" },
   daichi: { alt: 666, inc: 98, type: "daichi" },       
-  gps: { alt: 20200, inc: 55, type: "gps" },         // [NEW] MEOを補強！
-  galileo: { alt: 23222, inc: 56, type: "galileo" }, // [NEW] MEOを補強！
+  gps: { alt: 20200, inc: 55, type: "gps" },         
+  galileo: { alt: 23222, inc: 56, type: "galileo" }, 
+  beidou: { alt: 21528, inc: 55, type: "beidou" },    
+  glonass: { alt: 19100, inc: 64.8, type: "glonass" }, 
   michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
   himawari: { alt: 35786, inc: 0, type: "himawari" },
   gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
@@ -202,7 +206,7 @@ function initAudio() { if (audioCtx) return; audioCtx = new (window.AudioContext
 function autoEnableAudio() { if (audioEnabled) return; initAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); audioEnabled = true; const btn = document.getElementById("audioBtn"); btn.textContent = "🔊 AUDIO: ON"; btn.className = "on"; playSE("custom"); }
 function toggleAudio(event) { if (event) event.stopPropagation(); const btn = document.getElementById("audioBtn"); if (!audioEnabled) { initAudio(); if (audioCtx.state === 'suspended') audioCtx.resume(); audioEnabled = true; btn.textContent = "🔊 AUDIO: ON"; btn.className = "on"; playSE("custom"); } else { if (audioCtx) audioCtx.suspend(); audioEnabled = false; btn.textContent = "🔇 AUDIO: OFF"; btn.className = ""; } }
 function playStarSound() { if(!audioEnabled) return; const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(1000 + Math.random()*500, audioCtx.currentTime); gain.gain.setValueAtTime(0.06, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 3.0); }
-function playSE(type) { if(!audioEnabled || !audioCtx) return; const now = audioCtx.currentTime; if(type === "japan_alert") { for(let i=0; i<3; i++) { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.frequency.setValueAtTime(1800, now + i*0.15); gain.gain.setValueAtTime(0.08, now + i*0.15); gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + i*0.15); osc.stop(now + i*0.15 + 0.08); } return; } const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } else if(type==="gundam" || type==="gundam00" || type==="rocket_select"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); } gain.gain.linearRampToValueAtTime(0.0001, now+0.4); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+0.4); }
+function playSE(type) { if(!audioEnabled || !audioCtx) return; const now = audioCtx.currentTime; if(type === "japan_alert") { for(let i=0; i<3; i++) { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.frequency.setValueAtTime(1800, now + i*0.15); gain.gain.setValueAtTime(0.08, now + i*0.15); gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + i*0.15); osc.stop(now + i*0.15 + 0.08); } return; } const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); } gain.gain.linearRampToValueAtTime(0.0001, now+0.4); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+0.4); }
 
 // ====== 4. DRAWING CORE ======
 function drawStars() { for (let s of stars) { const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.fillRect(s.x, s.y, 2, 2); } }
@@ -222,66 +226,46 @@ function drawWorldMap() {
     mctx.closePath(); mctx.fill(); mctx.stroke();
   });
 
-  // すべての発射基地にベースとなるレーダーサークルをプロット
   for (let key in rocketBases) {
     const base = rocketBases[key];
     mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
   }
 
-  // 🎨 [NEW-V14] ロケットたちを、線画から色鮮やかな「ドット絵風・司令室カスタムグラフィック」へ！
   if (selectedLaunchSite !== "none") {
     const activeBase = rocketBases[selectedLaunchSite];
-    
-    mctx.save();
-    mctx.translate(activeBase.x, activeBase.y);
-    
-    // レーダーロックオン枠
-    mctx.strokeStyle = "#ff3333"; mctx.lineWidth = 1;
-    mctx.strokeRect(-12, -20, 24, 34);
+    mctx.save(); mctx.translate(activeBase.x, activeBase.y);
+    mctx.strokeStyle = "#ff3333"; mctx.lineWidth = 1; mctx.strokeRect(-12, -20, 24, 34);
     mctx.beginPath(); mctx.arc(0, -3, 15, 0, Math.PI*2); mctx.strokeStyle = "rgba(255,51,51,0.2)"; mctx.stroke();
 
     switch(selectedLaunchSite) {
-      case "japan": // 🚀 H3ロケット：純白の美しいコア＋サイドブースター＋青ライン
-        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2, -16, 4, 24); // メインコア
-        mctx.fillStyle = "#00aaff"; mctx.fillRect(-2, -6, 4, 1);  // 機体ブルーライン
-        mctx.fillStyle = "#dddddd"; mctx.fillRect(-4, 0, 2, 8);   // 固体ロケットブースター左
-        mctx.fillRect(2, 0, 2, 8);    // 固体ロケットブースター右
-        mctx.fillStyle = "#ff6600"; mctx.fillRect(-1, 8, 2, 2);   // エンジンノズル
+      case "japan": 
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2, -16, 4, 24); 
+        mctx.fillStyle = "#00aaff"; mctx.fillRect(-2, -6, 4, 1);  
+        mctx.fillStyle = "#dddddd"; mctx.fillRect(-4, 0, 2, 8); mctx.fillRect(2, 0, 2, 8);    
+        mctx.fillStyle = "#ff6600"; mctx.fillRect(-1, 8, 2, 2);   
         break;
-        
-      case "usa": // 🚀 スペースシャトル：オレンジの外部タンクに白黒のオービターが横にドッキングする機能美！
-        mctx.fillStyle = "#d2691e"; mctx.fillRect(-3, -15, 6, 23); // 巨大なオレンジ外部燃料タンク(ET)
-        mctx.fillStyle = "#ffffff"; mctx.fillRect(-5, -7, 2, 14);  // 左固体補助ロケット(SRB)
-        // 右側に合体する白いオービター(スペースシャトル本体)
-        mctx.fillRect(3, -4, 3, 10);   // オービターキャビン
-        mctx.fillStyle = "#000000"; mctx.fillRect(3, 2, 5, 3);    // 主翼（耐熱タイル黒）
-        mctx.fillStyle = "#ffffff"; mctx.fillRect(3, -6, 2, 2);   // 機首のホワイト
+      case "usa": 
+        mctx.fillStyle = "#d2691e"; mctx.fillRect(-3, -15, 6, 23); 
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-5, -7, 2, 14); mctx.fillRect(3, -4, 3, 10);   
+        mctx.fillStyle = "#000000"; mctx.fillRect(3, 2, 5, 3);    
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(3, -6, 2, 2);   
         break;
-        
-      case "kazakhstan": // 🚀 ソユーズ：渋いミリタリーグリーン＋根本が4つに広がるクラスター形状
-        mctx.fillStyle = "#557755"; mctx.fillRect(-1.5, -17, 3, 25); // メインコア
-        mctx.fillStyle = "#446644"; 
-        mctx.fillRect(-3.5, -1, 2, 9);   // 周囲を取り囲むクラスターブースター（左）
-        mctx.fillRect(1.5, -1, 2, 9);    // 周囲を取り囲むクラスターブースター（右）
-        mctx.fillStyle = "#cc5500"; mctx.fillRect(-2, 8, 4, 1);     // 点火口バーニア
+      case "kazakhstan": 
+        mctx.fillStyle = "#557755"; mctx.fillRect(-1.5, -17, 3, 25); 
+        mctx.fillStyle = "#446644"; mctx.fillRect(-3.5, -1, 2, 9); mctx.fillRect(1.5, -1, 2, 9);    
+        mctx.fillStyle = "#cc5500"; mctx.fillRect(-2, 8, 4, 1);     
         break;
-        
-      case "france": // 🚀 アリアン6：漆黒のフェアリング＋スタイリッシュなユーロブルーのブースター
-        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2.5, -14, 5, 22); // コア機体
-        mctx.fillStyle = "#111111"; mctx.fillRect(-2.5, -14, 5, 4);  // 特徴的な黒いノーズフェアリング
-        mctx.fillStyle = "#0044cc"; mctx.fillRect(-4.5, 0, 2, 8);   // 鮮やかなユーロブルーのサイドブースター左
-        mctx.fillRect(2.5, 0, 2, 8);    // サイドブースター右
+      case "france": 
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-2.5, -14, 5, 22); 
+        mctx.fillStyle = "#111111"; mctx.fillRect(-2.5, -14, 5, 4);  
+        mctx.fillStyle = "#0044cc"; mctx.fillRect(-4.5, 0, 2, 8); mctx.fillRect(2.5, 0, 2, 8);    
         break;
-        
-      case "jaburo": // 🛸 ホワイトベース：赤・白・青のトリコロール！左右のカタパルトがせり出した「木馬」形状
-        mctx.fillStyle = "#ffffff"; mctx.fillRect(-3, -10, 6, 16);  // 中央船体・メインブリッジ
-        mctx.fillStyle = "#ff3333"; mctx.fillRect(-3, -2, 6, 3);    // 船体中央の赤いアクセントプレート
-        mctx.fillStyle = "#ffffff"; 
-        mctx.fillRect(-10, -5, 4, 15);   // 左舷モビルスーツ・カタパルトデッキ
-        mctx.fillRect(6, -5, 4, 15);    // 右舷モビルスーツ・カタパルトデッキ
-        mctx.fillStyle = "#3366cc"; mctx.fillRect(-10, 5, 4, 2);    // カタパルト先端のブルーハッチ
-        mctx.fillRect(6, 5, 4, 2);
-        mctx.fillStyle = "#ffcc00"; mctx.fillRect(-1, -12, 2, 2);   // メインアンテナ黄色
+      case "jaburo": 
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-3, -10, 6, 16);  
+        mctx.fillStyle = "#ff3333"; mctx.fillRect(-3, -2, 6, 3);    
+        mctx.fillStyle = "#ffffff"; mctx.fillRect(-10, -5, 4, 15); mctx.fillRect(6, -5, 4, 15);    
+        mctx.fillStyle = "#3366cc"; mctx.fillRect(-10, 5, 4, 2); mctx.fillRect(6, 5, 4, 2);
+        mctx.fillStyle = "#ffcc00"; mctx.fillRect(-1, -12, 2, 2);   
         break;
     }
     mctx.restore();
@@ -307,16 +291,17 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
     case "daichi": 
       targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
       break; 
-    case "gps": // 🛰️ [NEW] 次世代GPSブロックIII：輝くゴールドコアに大型青パドルを十字展開！
-      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); // コア
-      targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); // ソーラーパドル左
-      targetCtx.fillRect(4, -1, 11, 2);   // ソーラーパドル右
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  // 高利得アンテナ
+    case "gps": 
+      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
       break;
-    case "galileo": // 🛰️ [NEW] 欧州ガリレオ：シルバーの細身ボディ＋超ロングなパドルの翼
-      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); // メインシルバーボディ
-      targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); // 超ロングパドル左
-      targetCtx.fillRect(3, -1.5, 15, 3);  // 超ロングパドル右
+    case "galileo": 
+      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
+      break;
+    case "beidou": 
+      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
+      break;
+    case "glonass": 
+      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
       break;
     case "michibiki": 
       targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
@@ -388,12 +373,12 @@ function update() {
   const markerR = R_EARTH * scale, mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
   for (let c of cityLights) { const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) { ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; ctx.fillRect(cx_light, cy_light, 2, 2); } }
   drawOrbitRingInclined(R_EARTH + 500e3, incRad, "rgba(100,150,255,1)"); 
-  drawOrbitRingInclined(R_EARTH + 22000e3, incRad, "rgba(100,255,150,1)"); // MEO中軌道ライン
+  drawOrbitRingInclined(R_EARTH + 21000e3, incRad, "rgba(100,255,150,1)"); 
   drawOrbitRingInclined(R_EARTH + 35786e3, incRad, "rgba(255,255,0,1)"); 
   drawOrbitRingInclined(r, incRad, "rgba(255,255,255,1)");
 
   if (currentMissionType === "gundam00") {
-    const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle); const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale; ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.shadowBlur = 15; ctx.shadowColor = "cyan"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+    const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle); const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale; ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); stroke(); ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.shadowBlur = 15; ctx.shadowColor = "cyan"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
   }
 
   for (let sat of multiSats) { const rr = R_EARTH + sat.alt, vv_b = Math.sqrt(G * M / rr), omega_b = (vv_b / rr) * 10, th_b = omega_b * t + sat.theta0; const bsx = 300 + rr * Math.cos(th_b) * scale, bsy = 300 + rr * Math.sin(th_b) * Math.cos(incRad) * scale; drawBackgroundSatellite(bsx, bsy, sat.alt); }
