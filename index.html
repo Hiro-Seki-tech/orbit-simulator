@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ v5.9.1 (True Final Edition)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v5.9.2 (True Final Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -83,7 +83,7 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v5.9.1</h2>
+<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v5.9.2</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
@@ -140,7 +140,11 @@
         <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
         <option value="gps">GPS Block III (アメリカ/次世代測位) [MEO]</option>
         <option value="galileo">Galileo (欧州連合/民間測位) [MEO]</option>
+        <!-- 🛰️ [V5.9.2 FIXED] 抜け落ちていた北斗(BDS)とGLONASSを復元！ -->
+        <option value="beidou">北斗 / BDS (中国/全球測位システム) [MEO]</option>
         <option value="glonass">GLONASS (ロシア/ミリタリー測位) [MEO]</option>
+        <!-- 🛰️ [V5.9.2 FIXED] 抜け落ちていた日本の「みちびき」を復元！ -->
+        <option value="michibiki">みちびき (準天頂衛星/日本)</option>
         <option value="himawari">ひまわり (気象衛星/日本) [GEO]</option>
         <option value="ssps">宇宙太陽光発電衛星 (SSPS) [GEO]</option> 
         <option value="gundam00">軌道エレベーター基部 (00)</option>
@@ -176,6 +180,7 @@ const presetSelect = document.getElementById("presetSelect");
 const launchSelect = document.getElementById("launchSelect");
 const launchBtn = document.getElementById("launchBtn");
 
+// 🎯 [V5.9.2 FIXED] プリセットのデータ定義に beidou と michibiki を完全復活！
 const satellitePresets = {
   iss: { alt: 420, inc: 52, type: "iss" },
   hubble: { alt: 525, inc: 29, type: "hubble" },
@@ -183,15 +188,18 @@ const satellitePresets = {
   daichi: { alt: 666, inc: 98, type: "daichi" },       
   gps: { alt: 20200, inc: 55, type: "gps" },         
   galileo: { alt: 23222, inc: 56, type: "galileo" }, 
+  beidou: { alt: 21528, inc: 55, type: "beidou" },    
   glonass: { alt: 19100, inc: 64.8, type: "glonass" }, 
+  michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
   himawari: { alt: 35786, inc: 0, type: "himawari" },
   ssps: { alt: 35786, inc: 0, type: "ssps" },
   gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
   gundam_reentry: { alt: 150, inc: 28, type: "gundam" }
 };
 
+// 🎯 [V5.9.2 FIXED] 日本の種子島宇宙センターから飛び立つエースH3の目的地を、本来の「みちびき」にセット！
 const baseToPresetSyncMap = {
-  japan: "himawari",
+  japan: "michibiki",
   usa: "iss",
   kazakhstan: "glonass",
   france: "galileo",
@@ -399,6 +407,7 @@ function drawWorldMap() {
 
 function drawGroundTrack(incRad, earthAngle) { mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]); for(let i=0; i<400; i+=4) { const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle; const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100; if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my); } mctx.stroke(); mctx.setLineDash([]); }
 
+// 🎯 [V5.9.2 FIXED] ロストしてしまっていた各衛星固有の極上ドット絵デザイン描画を100%復帰！
 function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
   targetCtx.save(); targetCtx.translate(x, y); 
   if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
@@ -406,12 +415,36 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
     case "iss": 
       targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
       break; 
-    case "ssps": 
-      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
+    case "hubble": 
+      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
+      break; 
+    case "starlink": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
+      break; 
+    case "daichi": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
+      break; 
+    case "gps": 
+      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
       break;
+    case "galileo": 
+      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
+      break;
+    case "beidou": 
+      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
+      break;
+    case "glonass": 
+      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
+      break;
+    case "michibiki": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
+      break; 
     case "himawari": 
       targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
       break; 
+    case "ssps": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
+      break;
     case "gundam00": 
       targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); 
       break; 
@@ -440,7 +473,7 @@ function update() {
   drawStars(); drawWorldMap();
   if (audioEnabled && t >= nextStarSoundTime) { playStarSound(); nextStarSoundTime = t + 180 + Math.random()*180; }
 
-  // 🎯 エラー修正：markerR の定義を update 関数の先頭に移動し、後続のコード全域で参照可能にする
+  // エラー修正：markerR の定義を update 関数の先頭に移動し、後続のコード全域で参照可能にする
   const markerR = R_EARTH * scale;
 
   if (currentMissionType === "gundam00" && launchState === "idle") {
@@ -521,7 +554,7 @@ function update() {
   let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, R_EARTH * scale); grad.addColorStop(0.3, "rgba(0,0,0,0)"); grad.addColorStop(0.55, "rgba(0,0,0,0.35)"); grad.addColorStop(1, "rgba(0,0,0,0.85)"); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
-  // 🎯 エラー修正：markerR を update 関数の冒頭で一括定義したため、ここでの定義重複を解消し、座標算出を安全化
+  // エラー修正：markerR を update 関数の冒頭で一括定義したため、ここでの定義重複を解消し、座標算出を安全化
   const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
   for (let c of cityLights) { const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) { ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; ctx.fillRect(cx_light, cy_light, 2, 2); } }
   
