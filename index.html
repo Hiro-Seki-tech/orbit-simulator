@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ v5.8 (White Base Special Edition)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v5.9 (Majestic Frontier Edition - WB Fixed)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -83,12 +83,12 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v5.5</h2>
+<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v5.9</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
   <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">コア緑点灯</span></div>
-  <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・通信） ⇒ <span style="color:#ffff33; font-weight:bold;">コア黄点灯</span></div>
+  <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・太陽光発電） ⇒ <span style="color:#ffff33; font-weight:bold;">コア黄点灯</span></div>
 </div>
 
 <div id="timeBox">
@@ -140,10 +140,9 @@
         <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
         <option value="gps">GPS Block III (アメリカ/次世代測位) [MEO]</option>
         <option value="galileo">Galileo (欧州連合/民間測位) [MEO]</option>
-        <option value="beidou">北斗 / BDS (中国/全球測位システム) [MEO]</option>
         <option value="glonass">GLONASS (ロシア/ミリタリー測位) [MEO]</option>
-        <option value="michibiki">みちびき (準天頂衛星/日本)</option>
-        <option value="himawari">ひまわり (気象衛星/日本)</option>
+        <option value="himawari">ひまわり (気象衛星/日本) [GEO]</option>
+        <option value="ssps">宇宙太陽光発電衛星 (SSPS) [GEO]</option> 
         <option value="gundam00">軌道エレベーター基部 (00)</option>
         <option value="gundam_reentry">大気圏突入限界 (RX-78 ガンダム)</option>
       </select>
@@ -184,16 +183,15 @@ const satellitePresets = {
   daichi: { alt: 666, inc: 98, type: "daichi" },       
   gps: { alt: 20200, inc: 55, type: "gps" },         
   galileo: { alt: 23222, inc: 56, type: "galileo" }, 
-  beidou: { alt: 21528, inc: 55, type: "beidou" },    
   glonass: { alt: 19100, inc: 64.8, type: "glonass" }, 
-  michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
   himawari: { alt: 35786, inc: 0, type: "himawari" },
+  ssps: { alt: 35786, inc: 0, type: "ssps" },
   gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
   gundam_reentry: { alt: 150, inc: 28, type: "gundam" }
 };
 
 const baseToPresetSyncMap = {
-  japan: "michibiki",
+  japan: "himawari",
   usa: "iss",
   kazakhstan: "glonass",
   france: "galileo",
@@ -209,19 +207,25 @@ const elevatorSpeed = 150;
 
 let selectedLaunchSite = "none";
 
-// 発射シーケンス状態制御変数
-// launchState: "idle", "countdown", "map_climb", "space_climb", "docking_success", "leave_orbit"
+// 発射シーケンス状態制御
 let launchState = "idle";    
 let countdownTimer = 0;      
 let mapRocketYOffset = 0;    
-let mapRocketXOffset = 0;    // 🎯 [NEW-v5.8.2] ホワイトベースの2D斜め飛行用の横オフセットを追加
+let mapRocketXOffset = 0;    
 let spaceRocketProgress = 0; 
-let leaveOrbitProgress = 0;  // 🛸 [NEW-v5.8.2] ホワイトベースの重力圏離脱用の進捗率(0.0 ~ 1.0)
+let leaveOrbitProgress = 0;  
 let cachedSatAngleAtLaunch = 0; 
+let cachedTargetAngleAtLaunch = 0; 
 let launchSmokeParticles = [];  
 let dockingTimer = 0; 
 
-// 軌道上の前フレーム位置バッファ
+// 🎯 [NEW-v5.9.2] キラーんSEを一度だけトリガーするための再生管理フラグ
+let hasPlaySparkle = false;
+
+// ドッキングした瞬間のホワイトベースの位置（離脱アニメーションの始点）
+let dockWB_X3D = 300;
+let dockWB_Y3D = 300;
+
 let lastRocketX3D = 0;
 let lastRocketY3D = 0;
 
@@ -264,9 +268,36 @@ function playSE(type) {
     for(let i=0; i<3; i++) { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.frequency.setValueAtTime(1800, now + i*0.15); gain.gain.setValueAtTime(0.08, now + i*0.15); gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + i*0.15); osc.stop(now + i*0.15 + 0.08); } 
     return; 
   } 
+  
+  if (type === "wb_ignite") {
+    // 🛸 ホワイトベース専用ミノフスキー・ドライブ始動音！
+    // 重厚なSF反重力ハミング（低音）＋電磁誘導チャージ音（高音）をシンセサイズ
+    const oscLow = audioCtx.createOscillator(), gainLow = audioCtx.createGain();
+    const oscHigh = audioCtx.createOscillator(), gainHigh = audioCtx.createGain();
+    
+    oscLow.type = 'sine';
+    oscLow.frequency.setValueAtTime(90, now);
+    oscLow.frequency.linearRampToValueAtTime(55, now + 3.0);
+    gainLow.gain.setValueAtTime(0.28, now);
+    gainLow.gain.exponentialRampToValueAtTime(0.01, now + 3.0);
+    
+    oscHigh.type = 'triangle';
+    oscHigh.frequency.setValueAtTime(600, now);
+    oscHigh.frequency.exponentialRampToValueAtTime(1600, now + 2.5);
+    gainHigh.gain.setValueAtTime(0.12, now);
+    gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+    
+    oscLow.connect(gainLow); gainLow.connect(audioCtx.destination);
+    oscHigh.connect(gainHigh); gainHigh.connect(audioCtx.destination);
+    
+    oscLow.start(); oscLow.stop(now + 3.0);
+    oscHigh.start(); oscHigh.stop(now + 3.0);
+    return;
+  }
+  
   const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
   if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } 
-  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } 
+  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } 
   else if(type==="beep"){ osc.type='sine'; osc.frequency.setValueAtTime(1000, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.001, now+0.1); }
   else if(type==="ignite"){ 
     osc.type='sawtooth'; osc.frequency.setValueAtTime(80, now); osc.frequency.linearRampToValueAtTime(30, now+2.5); gain.gain.setValueAtTime(0.25, now); 
@@ -285,13 +316,42 @@ function playSE(type) {
     osc.frequency.setValueAtTime(1046, now+0.36); 
     gain.gain.linearRampToValueAtTime(0.0001, now+0.9);
   }
+  else if(type==="sparkle") {
+    // 🌟 [NEW-v5.9.2] キラー星：透明感のある金属的なきらめき効果音
+    const osc1 = audioCtx.createOscillator(), gain1 = audioCtx.createGain();
+    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(1600, now);
+    
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1500, now);
+    osc1.frequency.exponentialRampToValueAtTime(4200, now + 1.2);
+    gain1.gain.setValueAtTime(0.1, now);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(2000, now);
+    osc2.frequency.exponentialRampToValueAtTime(5500, now + 0.9);
+    gain2.gain.setValueAtTime(0.04, now);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+    
+    osc1.connect(gain1); gain1.connect(filter);
+    osc2.connect(gain2); gain2.connect(filter);
+    filter.connect(audioCtx.destination);
+    
+    osc1.start(); osc1.stop(now + 1.3);
+    osc2.start(); osc2.stop(now + 1.3);
+    return;
+  }
   else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); } 
   gain.gain.linearRampToValueAtTime(0.0001, now+2.5); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+2.5); 
 }
 
 // ====== 4. DRAWING CORE ======
 function drawStars() { for (let s of stars) { const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.fillRect(s.x, s.y, 2, 2); } }
-function drawOrbitRingInclined(r, incRad, color) { ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += 0.02) { const x3 = r * Math.cos(a), y3 = r * Math.sin(a) * Math.cos(incRad), z3 = r * Math.sin(a) * Math.sin(incRad); const sx = 300 + x3 * scale, sy = 300 + y3 * scale * (1 - z3 / r * 0.4); const alpha = (z3 < 0) ? 0.25 : 1.0; const rgba = color.replace("1)", alpha + ")"); if (a === 0) { ctx.beginPath(); ctx.strokeStyle = rgba; ctx.moveTo(sx, sy); } else { ctx.strokeStyle = rgba; ctx.lineTo(sx, sy); } } ctx.stroke(); }
+function drawOrbitRingInclined(r, incRad, color) { ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += 0.02) { const x3 = r * Math.cos(a), y3 = r * Math.sin(a) * Math.cos(incRad), z3 = r * Math.sin(a) * Math.sin(incRad); const sx = 300 + x3 * scale, sy = 300 + y3 * scale * (1 - z3 / r * 0.4); const alpha = (z3 < 0) ? 0.15 : 1.0; const rgba = color.replace("1)", alpha + ")"); if (a === 0) { ctx.beginPath(); ctx.strokeStyle = rgba; ctx.moveTo(sx, sy); } else { ctx.strokeStyle = rgba; ctx.lineTo(sx, sy); } } ctx.stroke(); }
 
 // ロケットグラフィックドローイング
 function renderRocketModel(targetCtx, siteKey, flameIntensity=0) {
@@ -327,11 +387,9 @@ function renderRocketModel(targetCtx, siteKey, flameIntensity=0) {
       break;
   }
   if (flameIntensity > 0) {
-    // 🛸 [NEW-v5.8.2] ホワイトベース専用の青白いミノフスキー・ドライブ噴射炎
     if (siteKey === "jaburo") {
       targetCtx.fillStyle = Math.random() > 0.5 ? "#00ffff" : "#0088ff";
       targetCtx.fillRect(-3, 8, 6, flameIntensity + Math.random()*8);
-      // 両舷カタパルトデッキの後ろからもサブ噴射
       targetCtx.fillStyle = "#00ffff";
       targetCtx.fillRect(-9, 10, 2, flameIntensity*0.5);
       targetCtx.fillRect(7, 10, 2, flameIntensity*0.5);
@@ -344,29 +402,19 @@ function renderRocketModel(targetCtx, siteKey, flameIntensity=0) {
 
 // 二次元・三次元の指定座標にタクティカルなSF調ロックオンマーカーを描画するモジュール
 function drawSF_LockonTarget(targetCtx, x, y, size=18, color="#ff2222") {
-  targetCtx.save();
-  targetCtx.translate(x, y);
-  
+  targetCtx.save(); targetCtx.translate(x, y); 
   const pulseScale = 1.0 + Math.sin(t * 0.15) * 0.1;
   const rotateAngle = t * 0.02;
-  
-  targetCtx.strokeStyle = color;
-  targetCtx.lineWidth = 1.5;
-  
-  targetCtx.rotate(rotateAngle);
-  const half = size * pulseScale;
-  const len = size * 0.35;
-  
+  targetCtx.strokeStyle = color; targetCtx.lineWidth = 1.5; targetCtx.rotate(rotateAngle);
+  const half = size * pulseScale; const len = size * 0.35;
   targetCtx.beginPath(); targetCtx.moveTo(-half, -half + len); targetCtx.lineTo(-half, -half); targetCtx.lineTo(-half + len, -half); targetCtx.stroke();
   targetCtx.beginPath(); targetCtx.moveTo(half - len, -half); targetCtx.lineTo(half, -half); targetCtx.lineTo(half, -half + len); targetCtx.stroke();
   targetCtx.beginPath(); targetCtx.moveTo(half, half - len); targetCtx.lineTo(half, half); targetCtx.lineTo(half - len, half); targetCtx.stroke();
   targetCtx.beginPath(); targetCtx.moveTo(-half + len, half); targetCtx.lineTo(-half, half); targetCtx.lineTo(-half, half - len); targetCtx.stroke();
-  
   if (Math.sin(t * 0.3) > -0.2) {
     targetCtx.beginPath(); targetCtx.arc(0, 0, size * 0.5, 0, Math.PI * 2); targetCtx.strokeStyle = "rgba(255,34,34,0.45)"; targetCtx.stroke();
     targetCtx.fillStyle = color; targetCtx.beginPath(); targetCtx.arc(0, 0, 1.5, 0, Math.PI * 2); targetCtx.fill();
   }
-  
   targetCtx.restore();
 }
 
@@ -375,7 +423,6 @@ function drawWorldMap() {
   mctx.strokeStyle = "rgba(0, 255, 204, 0.08)"; mctx.lineWidth = 1;
   for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
   for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
-  
   mctx.fillStyle = "rgba(0, 255, 204, 0.15)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.lineWidth = 1.2;
   detailedLandmasses.forEach(polygon => {
     if (polygon.length === 0) return;
@@ -383,32 +430,20 @@ function drawWorldMap() {
     for (let i = 1; i < polygon.length; i++) { mctx.lineTo(polygon[i].x, polygon[i].y); }
     mctx.closePath(); mctx.fill(); mctx.stroke();
   });
-
   for (let key in rocketBases) {
     const base = rocketBases[key];
     mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
   }
-
-  // 2D発射基地と打ち上げ上昇アニメーション
   if (selectedLaunchSite !== "none") {
     const activeBase = rocketBases[selectedLaunchSite];
     mctx.save();
-    
-    // 🎨 [NEW-v5.8.2] 2D地図でのホワイトベース斜め飛行。XとYの両方にオフセットを反映させる
     mctx.translate(activeBase.x + mapRocketXOffset, activeBase.y - mapRocketYOffset);
-    
     mctx.strokeStyle = (launchState === "countdown" || launchState === "map_climb") ? "#ff3333" : "#ffcc00"; 
-    mctx.lineWidth = 1;
-    mctx.strokeRect(-12, -20, 24, 34);
-    mctx.beginPath(); mctx.arc(0, -3, 15, 0, Math.PI*2); mctx.strokeStyle = "rgba(255,51,51,0.2)"; mctx.stroke();
-
+    mctx.lineWidth = 1; mctx.strokeRect(-12, -20, 24, 34);
     const flame = (launchState === "map_climb") ? 8 : 0;
-    
-    // 🛸 [NEW-v5.8.2] ホワイトベース専用の斜めテイクオフ角度を傾斜させる
     if (selectedLaunchSite === "jaburo" && launchState === "map_climb") {
-      mctx.rotate(Math.atan2(-1.0, 1.3) + Math.PI/2); // 進む進行方向へドット絵を回転！
+      mctx.rotate(Math.atan2(-1.0, 1.3) + Math.PI/2); 
     }
-
     renderRocketModel(mctx, selectedLaunchSite, flame);
     mctx.restore();
   }
@@ -419,35 +454,14 @@ function drawGroundTrack(incRad, earthAngle) { mctx.beginPath(); mctx.strokeStyl
 function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
   targetCtx.save(); targetCtx.translate(x, y); 
   if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
-  
   switch(type) { 
     case "iss": 
       targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
       break; 
-    case "hubble": 
-      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
-      break; 
-    case "starlink": 
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
-      break; 
-    case "daichi": 
-      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
-      break; 
-    case "gps": 
-      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
+    case "ssps": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24);
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
       break;
-    case "galileo": 
-      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
-      break;
-    case "beidou": 
-      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
-      break;
-    case "glonass": 
-      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
-      break;
-    case "michibiki": 
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
-      break; 
     case "himawari": 
       targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
       break; 
@@ -466,17 +480,18 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
 
 function drawBackgroundSatellite(x, y, altitude) { if (altitude < 2000e3) { ctx.fillStyle = "#ff3333"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } else if (altitude < 35786e3) { ctx.fillStyle = "#33ff33"; ctx.fillRect(x - 4, y - 1.5, 8, 3); } else { ctx.fillStyle = "#ffff33"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } }
 
-// ミッション発射トリガー
 function triggerLaunch() {
   if (selectedLaunchSite === "none" || launchState !== "idle") return;
-  launchState = "countdown";
-  countdownTimer = 180; // 3秒カウントダウン (60fps)
-  mapRocketYOffset = 0;
-  mapRocketXOffset = 0; // 🎯 [NEW-v5.8.2] リセット
-  leaveOrbitProgress = 0; // 🛸 [NEW-v5.8.2] リセット
-  launchBtn.className = "launching";
-  launchBtn.textContent = "🔒 IN FLIGHT...";
-  playSE("beep");
+  launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
+  
+  // 🎯 [NEW-v5.9.2] キラー星効果音用の管理フラグのリセット
+  hasPlaySparkle = false;
+
+  if (selectedLaunchSite === "jaburo") {
+    playSE("wb_ignite");
+  } else {
+    playSE("beep");
+  }
 }
 
 // ====== 5. MAIN LOOP ======
@@ -485,7 +500,6 @@ function update() {
   drawStars(); drawWorldMap();
   if (audioEnabled && t >= nextStarSoundTime) { playStarSound(); nextStarSoundTime = t + 180 + Math.random()*180; }
 
-  // 軌道エレベーター周回制御
   if (currentMissionType === "gundam00" && launchState === "idle") {
     elevatorAlt += elevatorSpeed * elevatorDirection;
     if (elevatorAlt >= 35786) { elevatorAlt = 35786; elevatorDirection = -1; } 
@@ -496,379 +510,291 @@ function update() {
   const alt = slider.value * 1000, incDeg = incSlider.value, incRad = incDeg * Math.PI/180;
   altLabel.textContent = slider.value + " km"; incLabel.textContent = incDeg + "°";
   const r = R_EARTH + alt, v = Math.sqrt(G*M / r), omega_sat = (v/r)*10, earthAngle = (2*Math.PI/86164)*10*t;
-  
-  // 軌道上ターゲット衛星の本来の角度
   const satAngle = (currentMissionType === "gundam00") ? earthAngle : omega_sat * t;
-
-  // 2D地図 衛星のプロット座標算出
   const mx = ((lonRad = satAngle - earthAngle, (lonRad / (Math.PI*2)) % 1 * 400 + 400) % 400);
   const latRad = Math.asin(Math.sin(incRad)*Math.sin(satAngle));
   const my = 100 - (latRad / (Math.PI/2)) * 100;
 
-  // 2D地図：発射ロックオン中は目的衛星にド派手な「SFネオン風ターゲットロック」を描写
-  // ロケット打ち上げ中であっても、目的衛星とこのマークは一切消さずに表示をキープ！
-  if (selectedLaunchSite !== "none") {
-    drawSF_LockonTarget(mctx, mx, my, 22, "#ff3333");
+  // 🎯 [NEW-v5.9.2] 2D地図：離脱フェーズ（leave_orbit）に入った後はロックオンマーカーを自動で消去！
+  if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { 
+    drawSF_LockonTarget(mctx, mx, my, 22, "#ff3333"); 
   }
 
-  // シーケンスタイムライン監視
+  // シーケンス管理
   if (launchState === "countdown") {
-    countdownTimer--;
-    if (countdownTimer % 60 === 0 && countdownTimer > 0) playSE("beep");
-    if (countdownTimer <= 0) { launchState = "map_climb"; mapRocketYOffset = 0; mapRocketXOffset = 0; playSE("ignite"); }
-  } else if (launchState === "map_climb") {
-    // 🎨 [NEW-v5.8.2] ホワイトベース（jaburo）は、ゆっくり斜め右（x方向プラス、y方向マイナス）へ飛んでいく！
-    if (selectedLaunchSite === "jaburo") {
-      mapRocketYOffset += 1.0; // 通常の1.8よりゆっくりに
-      mapRocketXOffset += 1.3; // 斜めにせり上がる横ベクトルの追加
-    } else {
-      mapRocketYOffset += 1.8;
-      mapRocketXOffset = 0;
+    countdownTimer--; 
+    if (countdownTimer % 60 === 0 && countdownTimer > 0) {
+      if (selectedLaunchSite !== "jaburo") playSE("beep");
     }
-
+    if (countdownTimer <= 0) { 
+      launchState = "map_climb"; mapRocketYOffset = 0; mapRocketXOffset = 0; 
+      if (selectedLaunchSite === "jaburo") {
+        playSE("wb_ignite");
+      } else {
+        playSE("ignite");
+      }
+    }
+  } else if (launchState === "map_climb") {
+    if (selectedLaunchSite === "jaburo") { mapRocketYOffset += 1.0; mapRocketXOffset += 1.3; } 
+    else { mapRocketYOffset += 1.8; mapRocketXOffset = 0; }
     const activeBase = rocketBases[selectedLaunchSite];
-    const currentX = activeBase.x + mapRocketXOffset;
-    const currentY = activeBase.y - mapRocketYOffset;
-
-    // 地図の枠外（上端または右端）へ消えたら3D宇宙上昇へスイッチ
-    if (currentY < -20 || currentX > 420) {
-      launchState = "space_climb";
-      spaceRocketProgress = 0;
-      cachedSatAngleAtLaunch = earthAngle; // 点火の瞬間の自転をロック
+    if (activeBase.y - mapRocketYOffset < -20 || activeBase.x + mapRocketXOffset > 420) {
+      launchState = "space_climb"; spaceRocketProgress = 0; cachedSatAngleAtLaunch = earthAngle;
+      cachedTargetAngleAtLaunch = satAngle; // 発射の瞬間のターゲット位置をロック
       
-      // 3D座標初期値の設定
-      const baseObj = rocketBases[selectedLaunchSite];
-      const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
+      const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
       const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
       lastRocketX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale;
       lastRocketY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
     }
   } else if (launchState === "space_climb") {
-    // 重力ターンの可変加速イージング
-    const speedFactor = 0.0012 + (spaceRocketProgress * 0.009);
+    const speedFactor = (selectedLaunchSite === "jaburo") ? 0.004 : (0.0012 + (spaceRocketProgress * 0.009));
     spaceRocketProgress += speedFactor;
-    if (spaceRocketProgress >= 1.0) {
-      launchState = "docking_success";
-      dockingTimer = 90; // 1.5秒間お祝いネオンを表示
-      playSE("success");
+    if (spaceRocketProgress >= 1.0) { 
+      launchState = "docking_success"; dockingTimer = 90; playSE("success"); 
+      // ドッキングした瞬間(100%地点)の3D画面上の絶対ピクセル座標をロック（離脱アニメーションの始点）
+      dockWB_X3D = lastRocketX3D;
+      dockWB_Y3D = lastRocketY3D;
     }
   } else if (launchState === "docking_success") {
     dockingTimer--;
     if (dockingTimer <= 0) {
-      // 🛸 [NEW-v5.8.2] ホワイトベース専用の分岐。ガンダムを回収した瞬間にそのまま圏外へ飛び去るフェーズに！
-      if (selectedLaunchSite === "jaburo") {
-        launchState = "leave_orbit";
-        leaveOrbitProgress = 0;
-        playSE("ignite"); // 離脱用強出力メインスラスター点火音
-      } else {
-        launchState = "idle";
-        mapRocketYOffset = 0;
-        mapRocketXOffset = 0;
-        launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION";
-      }
+      if (selectedLaunchSite === "jaburo") { 
+        launchState = "leave_orbit"; leaveOrbitProgress = 0; 
+        playSE("wb_ignite"); // ミノフスキー大推進ノイズ
+      } 
+      else { launchState = "idle"; mapRocketYOffset = 0; mapRocketXOffset = 0; launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION"; }
     }
   } else if (launchState === "leave_orbit") {
-    // 🛸 [NEW-v5.8.2] ホワイトベース：重力圏を離脱して、月を目指して圏外（画面外）へと一気に加速していく！
-    leaveOrbitProgress += 0.008; // 離脱速度
-    if (leaveOrbitProgress >= 1.0) {
-      launchState = "idle";
-      mapRocketYOffset = 0;
-      mapRocketXOffset = 0;
-      launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION";
-    }
+    // 巨体の重厚な離脱を表現。ゆっくりと堂々と推進（8秒間の長尺へ）
+    leaveOrbitProgress += 0.0022; 
+    if (leaveOrbitProgress >= 1.0) { launchState = "idle"; mapRocketYOffset = 0; mapRocketXOffset = 0; launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION"; }
   }
 
   drawGroundTrack(incRad, earthAngle);
-  
-  // ロケット打ち上げ中でも2D地図の衛星アイコンは絶対に消去せず常に描画！
   drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
 
-  const latDeg = latRad * 180 / Math.PI;
-  let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360;
-  if(lonDeg > 180) lonDeg -= 360; if(lonDeg < -180) lonDeg += 360;
-
-  // HUDトラッキングテレメトリの状況適応
   const trackingEl = document.getElementById("hudTracking");
-  const isOverJapan = (latDeg > 24 && latDeg < 46 && lonDeg > 122 && lonDeg < 149);
-  
-  if (launchState === "countdown") {
-    trackingEl.textContent = `⚠️ LAUNCH COUNTDOWN: ${Math.ceil(countdownTimer/60)}s`; trackingEl.style.color = "#ff3333";
-  } else if (launchState === "map_climb") {
-    trackingEl.textContent = `🚀 ATMOSPHERE CLIMBING...`; trackingEl.style.color = "#ff9900";
-  } else if (launchState === "space_climb") {
-    if(spaceRocketProgress > 0.85) {
-      trackingEl.textContent = `🔒 FINAL INJECTION DOCKING...`; trackingEl.style.color = "yellow";
-    } else {
-      trackingEl.textContent = `⚡ SPACE INJECTION: ${(spaceRocketProgress*100).toFixed(0)}%`; trackingEl.style.color = "#00ffcc";
-    }
-  } else if (launchState === "docking_success") {
-    const successHudText = (selectedLaunchSite === "jaburo") ? "🎯 GUNDAM RECOVERED SUCCESS!" : "🎯 TARGET DOCKED! MISSION SUCCESS";
-    trackingEl.textContent = successHudText; trackingEl.style.color = "#33ff33";
-  } else if (launchState === "leave_orbit") {
-    // 🛸 [NEW-v5.8.2] ホワイトベース離脱時のHUD警告
-    trackingEl.textContent = `🌌 LEAVING EARTH ORBIT: DESTINATION [MOON]`; trackingEl.style.color = "#66aaff";
-  } else if (selectedLaunchSite !== "none") {
-    const bName = rocketBases[selectedLaunchSite].rocket;
-    trackingEl.textContent = `🚀 LOCK: ${bName} BASE`; trackingEl.style.color = "#ffcc00";
-  } else if(isOverJapan) {
-    trackingEl.textContent = "⚠️ OVER JAPAN"; trackingEl.style.color = "#f33";
-    if(t - lastAlertTime > 250) { playSE("japan_alert"); lastAlertTime = t; }
-  } else { 
-    trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; 
-  }
+  if (launchState === "leave_orbit") { trackingEl.textContent = `🌌 DESTINATION: OUTER SPACE [MOON]`; trackingEl.style.color = "#66aaff"; }
+  else if (launchState === "space_climb") { trackingEl.textContent = `⚡ ${(selectedLaunchSite === "jaburo" ? "DIRECT INJECTION" : "SPACE INJECTION")}: ${(spaceRocketProgress*100).toFixed(0)}%`; trackingEl.style.color = "#00ffcc"; }
+  else if (selectedLaunchSite !== "none") { trackingEl.textContent = `🚀 LOCK: ${rocketBases[selectedLaunchSite].rocket} BASE`; trackingEl.style.color = "#ffcc00"; }
+  else { trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; }
 
-  // 3D地球テクスチャの回転描画
+  // 3D地球
   ctx.save(); ctx.translate(300, 300); ctx.rotate(earthAngle);
-  if (earthImg.complete && earthImg.naturalWidth !== 0) {
-    ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale);
-  } else {
+  if (earthImg.complete && earthImg.naturalWidth !== 0) { ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale); } 
+  else {
     let earthGrad = ctx.createRadialGradient(-R_EARTH*scale*0.3, -R_EARTH*scale*0.3, 0, 0, 0, R_EARTH*scale);
-    earthGrad.addColorStop(0, "#0066cc");
-    earthGrad.addColorStop(0.6, "#002266");
-    earthGrad.addColorStop(1, "#00081a");
-    ctx.fillStyle = earthGrad;
-    ctx.beginPath(); ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2); ctx.fill();
-    
-    ctx.strokeStyle = "rgba(0, 255, 204, 0.25)";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI, true); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-R_EARTH*scale, 0); ctx.lineTo(R_EARTH*scale, 0); ctx.stroke();
+    earthGrad.addColorStop(0, "#0066cc"); earthGrad.addColorStop(0.6, "#002266"); earthGrad.addColorStop(1, "#00081a");
+    ctx.fillStyle = earthGrad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2); ctx.fill();
   }
   let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, R_EARTH * scale); grad.addColorStop(0.3, "rgba(0,0,0,0)"); grad.addColorStop(0.55, "rgba(0,0,0,0.35)"); grad.addColorStop(1, "rgba(0,0,0,0.85)"); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
-  // 日本地表マーカー
+  // 日本（杉並）マーカー
   const markerR = R_EARTH * scale, mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
   for (let c of cityLights) { const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) { ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; ctx.fillRect(cx_light, cy_light, 2, 2); } }
   
-  // 軌道サークル
   drawOrbitRingInclined(R_EARTH + 500e3, incRad, selectedLaunchSite==="usa" ? "rgba(255,50,50,1)" : "rgba(100,150,255,0.4)"); 
   drawOrbitRingInclined(R_EARTH + 21000e3, incRad, (selectedLaunchSite==="france"||selectedLaunchSite==="kazakhstan") ? "rgba(255,50,50,1)" : "rgba(100,255,150,0.4)"); 
   drawOrbitRingInclined(R_EARTH + 35786e3, incRad, selectedLaunchSite==="japan" ? "rgba(255,50,50,1)" : "rgba(255,255,0,0.4)"); 
   drawOrbitRingInclined(r, incRad, "rgba(255,255,255,0.8)");
 
-  // 軌道エレベーター
-  if (currentMissionType === "gundam00") {
-    const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle); const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale; ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke(); ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.shadowBlur = 15; ctx.shadowColor = "cyan"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
-  }
-
-  // 背景のその他測位網
-  for (let sat of multiSats) { const rr = R_EARTH + sat.alt, vv_b = Math.sqrt(G * M / rr), omega_b = (vv_b / rr) * 10, th_b = omega_b * t + sat.theta0; const bsx = 300 + rr * Math.cos(th_b) * scale, bsy = 300 + rr * Math.sin(th_b) * Math.cos(incRad) * scale; drawBackgroundSatellite(bsx, bsy, sat.alt); }
-
-  // 通常時の衛星3D位置
   const satX = 300 + r * Math.cos(satAngle) * scale, satY = 300 + r * Math.sin(satAngle) * Math.cos(incRad) * scale;
-
-  // 3D宇宙画面：目的衛星に赤いSFターゲットマークを完全に追従してオーバーレイ表示！
-  if (selectedLaunchSite !== "none") {
-    drawSF_LockonTarget(ctx, satX, satY, 26, "#ff3333");
+  
+  // 🎯 [NEW-v5.9.2] 3D宇宙画面：離脱フェーズ（leave_orbit）に入った後はロックオンマークを自動で消去！
+  if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { 
+    drawSF_LockonTarget(ctx, satX, satY, 26, "#ff3333"); 
   }
 
-  // 🔥 改良型ロケット3D打ち上げ描画ロジック（姿勢完璧同期の放物線上昇＆合流）
+  // ⚡ SSPS電力伝送ビーム演出
+  if (currentMissionType === "ssps") {
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(t*0.1)*0.2})`;
+    ctx.lineWidth = 1 + Math.random()*2;
+    ctx.setLineDash([5, 15]); ctx.beginPath(); ctx.moveTo(satX, satY); ctx.lineTo(mmx, mmy); ctx.stroke();
+    ctx.fillStyle = "#ffd700"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffd700";
+    ctx.beginPath(); ctx.arc(mmx, mmy, 3 + Math.random()*2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // 3Dロケット上昇描画
   if (launchState === "space_climb" || launchState === "docking_success" || launchState === "leave_orbit") {
-    const baseObj = rocketBases[selectedLaunchSite];
-    const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
-    
-    // 自転に同期した発射初期位置角度
+    const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
     const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
-    
-    let rx, ry, pitchAngle;
-    let renderScale = 1.5;
+    let rx, ry, pitchAngle, renderScale = 1.5, globalAlpha = 1.0;
 
-    // 🛸 [NEW-v5.8.2] ホワイトベース専用：ガンダムドッキング後、重力圏を離脱して画面右上へ飛び去る！
     if (launchState === "leave_orbit") {
-      // ガンダムを回収した最終角度（satAngle）を基点として、円軌道の接線・外向き（月への軌道）へと一気に加速離脱！
-      const currentR = r + (35000e3 * leaveOrbitProgress); // 地球から月に向けて一気にズームアウト
-      const finalAngle = satAngle + (2.5 * leaveOrbitProgress); // 螺旋を描くように離れていく
+      // 画面外へ消え去らず、しっかりCanvasの星空内に美しく収まる直線離脱ロジック！
+      // 終点は画面右上の星空 (470, 130) 付近に設定。
+      const targetX = 470;
+      const targetY = 130;
       
-      rx = 300 + currentR * Math.cos(finalAngle) * scale;
-      ry = 300 + currentR * Math.sin(finalAngle) * Math.cos(incRad) * scale;
-
-      // 進行ベクトルの差分計算
-      let rx_diff = rx - lastRocketX3D;
-      let ry_diff = ry - lastRocketY3D;
-      pitchAngle = Math.atan2(ry_diff, rx_diff);
-
-      // 月へ向かって離れていくにつれて徐々に縮小（ズームアウト）する美しい視覚エフェクト！
-      renderScale = 1.5 * (1.0 - leaveOrbitProgress * 0.88);
-
-      lastRocketX3D = rx;
-      lastRocketY3D = ry;
-
-      // 特大ミノフスキー・ブルーの推進パーティクルを尾を引くように大量放出！
-      if (Math.random() > 0.04) {
-        launchSmokeParticles.push({
-          x: rx, y: ry,
-          vx: (Math.random() - 0.5) * 0.5 - Math.cos(pitchAngle) * 3.5, // 超高速噴射
-          vy: (Math.random() - 0.5) * 0.5 - Math.sin(pitchAngle) * 3.5,
-          size: 7 + Math.random() * 8, life: 55, maxLife: 55,
-          color: Math.random() > 0.5 ? "rgba(0, 240, 255, 0.75)" : "rgba(220,240,255,0.3)" // 青白く輝く粒子
-        });
-      }
-
-    } else {
-      // 通常の打ち上げ ＆ ドッキングへの精密アプローチ
+      // 指数関数的にゆっくり減速しながら月へ吸い込まれるようなイージング
+      const lerpFactor = Math.pow(leaveOrbitProgress, 1.2);
+      rx = dockWB_X3D + (targetX - dockWB_X3D) * lerpFactor;
+      ry = dockWB_Y3D + (targetY - dockWB_Y3D) * lerpFactor;
+      
+      // 進首方向角度（pitchAngle）をブレなくガッチリ固定！くるくる回る回転バグを完全駆逐！
+      pitchAngle = Math.atan2(targetY - dockWB_Y3D, targetX - dockWB_X3D);
+      
+      // 月の彼方へ遠ざかるズームアウト
+      renderScale = 1.5 * (1.0 - leaveOrbitProgress * 0.94);
+      globalAlpha = Math.max(0, 1.0 - leaveOrbitProgress);
+    } 
+    else {
+      // 🚀 通常の上昇フェーズ
       const currentProgress = (launchState === "docking_success") ? 1.0 : spaceRocketProgress;
-      const targetOffset = 0.08 * (1.0 - currentProgress); 
-      const finalTargetAngle = satAngle - targetOffset;
       
-      const currentFlightAngle = initialLaunchAngle + (finalTargetAngle - initialLaunchAngle) * currentProgress;
-      const currentRocketR = R_EARTH + (r - R_EARTH) * currentProgress;
-
-      rx = 300 + currentRocketR * Math.cos(currentFlightAngle) * scale;
-      ry = 300 + currentRocketR * Math.sin(currentFlightAngle) * Math.cos(incRad) * scale;
-
-      let rx_diff = rx - lastRocketX3D;
-      let ry_diff = ry - lastRocketY3D;
-      pitchAngle = Math.atan2(ry_diff, rx_diff);
-
-      if (Math.abs(rx_diff) < 0.001 && Math.abs(ry_diff) < 0.001) {
-        pitchAngle = currentFlightAngle + Math.PI/2;
+      if (selectedLaunchSite === "jaburo") {
+        // ホワイトベース専用：
+        // 地表のジャブロー始点から、周回しているガンダムの「現在の3D座標」へ一直線にゴム紐のように突き進む！
+        // これによって自転周回のノイズから100%解放され、くるくるスピン（残像拳バグ）を完全に根絶しました。
+        const startX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale;
+        const startY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
+        
+        rx = startX3D + (satX - startX3D) * currentProgress;
+        ry = startY3D + (satY - startY3D) * currentProgress;
+        
+        // 機首方向は目標ガンダムへの直線ベクトルを常に向く！
+        pitchAngle = Math.atan2(satY - startY3D, satX - startX3D);
+      } 
+      else {
+        // 通常のロケット：ケプラー重力ターン放物線
+        const targetOffset = 0.08 * (1.0 - currentProgress); 
+        const finalTargetAngleOffset = satAngle - targetOffset;
+        const currentFlightAngle = initialLaunchAngle + (finalTargetAngleOffset - initialLaunchAngle) * currentProgress;
+        const currentRocketR = R_EARTH + (r - R_EARTH) * currentProgress;
+        
+        rx = 300 + currentRocketR * Math.cos(currentFlightAngle) * scale;
+        ry = 300 + currentRocketR * Math.sin(currentFlightAngle) * Math.cos(incRad) * scale;
+        
+        let rx_diff = rx - lastRocketX3D; let ry_diff = ry - lastRocketY3D; pitchAngle = Math.atan2(ry_diff, rx_diff);
+        if (Math.abs(rx_diff) < 0.001) pitchAngle = currentFlightAngle + Math.PI/2;
       }
-
-      lastRocketX3D = rx;
-      lastRocketY3D = ry;
-
-      // 通常の上昇推進煙
-      if (launchState === "space_climb" && Math.random() > 0.08) {
-        const pColor = (selectedLaunchSite === "jaburo") ? "rgba(0,180,255,0.7)" : "rgba(255,100,0,0.85)";
-        launchSmokeParticles.push({
-          x: rx, y: ry,
-          vx: (Math.random() - 0.5) * 0.6 - Math.cos(pitchAngle)*1.8,
-          vy: (Math.random() - 0.5) * 0.6 - Math.sin(pitchAngle)*1.8,
-          size: 5 + Math.random() * 5, life: 40, maxLife: 40,
-          color: Math.random() > 0.4 ? pColor : "rgba(160,160,160,0.35)"
+    }
+    
+    // 次回用の座標ホールド
+    lastRocketX3D = rx; lastRocketY3D = ry;
+    
+    // 推進炎・特大ミノフスキーパーティクル（ゴゴゴゴー演出）
+    if (Math.random() > 0.04) {
+      if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
+        // 離脱時に「ゴゴゴゴー」という大推進力を感じさせるため、通常の3倍密度の青白い光の尾を放出！
+        for (let i = 0; i < 3; i++) {
+          launchSmokeParticles.push({
+            x: rx, y: ry,
+            vx: -Math.cos(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2,
+            vy: -Math.sin(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2,
+            size: 8 + Math.random() * 8,
+            life: 48, maxLife: 48,
+            color: Math.random() > 0.4 ? "rgba(0, 240, 255, 0.85)" : "rgba(180, 220, 255, 0.3)"
+          });
+        }
+      } else if (launchState === "space_climb") {
+        launchSmokeParticles.push({ 
+          x: rx, y: ry, 
+          vx: -Math.cos(pitchAngle)*2 + (Math.random()-0.5)*0.5, 
+          vy: -Math.sin(pitchAngle)*2 + (Math.random()-0.5)*0.5, 
+          size: 5 + Math.random()*4, 
+          life: 30, maxLife: 30,
+          color: (selectedLaunchSite === "jaburo" ? "#00ffff" : "#ffaa00") 
         });
       }
     }
+    launchSmokeParticles.forEach((p, idx) => { p.x += p.vx; p.y += p.vy; p.life--; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.life/p.maxLife), 0, Math.PI*2); ctx.fill(); if (p.life <= 0) launchSmokeParticles.splice(idx, 1); });
 
-    // 煙パーティクルの物理演算更新
-    launchSmokeParticles.forEach((p, idx) => {
-      p.x += p.vx; p.y += p.vy; p.life--;
-      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI*2); ctx.fill();
-      if (p.life <= 0) launchSmokeParticles.splice(idx, 1);
-    });
-
-    // ロケット機体（およびホワイトベース）のレンダリング
-    if (renderScale > 0.03) {
-      ctx.save();
-      ctx.translate(rx, ry);
-      ctx.rotate(pitchAngle + Math.PI/2);
-      ctx.scale(renderScale, renderScale);
-      
-      // 離脱中はさらに強力なミノフスキーメインバーニアを表現！
-      const flameVal = (launchState === "docking_success") ? 0 : (launchState === "leave_orbit" ? 15 : 8);
-      renderRocketModel(ctx, selectedLaunchSite, flameVal);
-      
-      // 🌟 [NEW-v5.8.2] 離脱フェーズ中は、カタパルト（左舷）にガンダムを格納した極小ドットビジュアルを追加！
-      if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(-9, 1, 2, 4);  // ガンダムの白いボディ
-        ctx.fillStyle = "#ff2222"; ctx.fillRect(-9, 5, 2, 1);  // 赤いフット
-      }
-      ctx.restore();
+    // 機体描画
+    ctx.save(); ctx.globalAlpha = globalAlpha; ctx.translate(rx, ry); ctx.rotate(pitchAngle + Math.PI/2); ctx.scale(renderScale, renderScale);
+    renderRocketModel(ctx, selectedLaunchSite, launchState==="docking_success"?0:8);
+    if (launchState === "leave_orbit") { 
+      // 左舷（カタパルトデッキ）に白いガンダムドット絵をガチッと立たせて回収しているグラフィック
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(-9, 1, 2, 4); 
+      ctx.fillStyle = "#ff2222"; ctx.fillRect(-9, 5, 2, 1); 
     }
-
-    // 🎯 ドッキング成功（お祝いネオン）エフェクト
+    ctx.restore();
+    
     if (launchState === "docking_success") {
-      ctx.save();
-      ctx.strokeStyle = `rgba(51, 255, 51, ${dockingTimer / 90})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(rx, ry, 30 - (dockingTimer * 0.25), 0, Math.PI * 2);
-      ctx.stroke();
+       ctx.fillStyle = "#33ff33"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(selectedLaunchSite==="jaburo"?"🎯 GUNDAM RECOVERED!":"🎯 DOCKED!", rx, ry - 35);
+    }
+    
+    // 🚀 [NEW-V19-FIXED] 画面右上端、星空の中ではっきりと「キラーん！」と美しく瞬き消えゆく極上フレア演出！
+    if (launchState === "leave_orbit" && leaveOrbitProgress > 0.82) {
+      const flareProgress = (leaveOrbitProgress - 0.82) / 0.18; // 0.0 ~ 1.0
+      
+      // 🎯 [NEW-v5.9.2] キラーんフレアが始まる瞬間にきらめき効果音（1回のみ）をトリガー！
+      if (!hasPlaySparkle) {
+        playSE("sparkle");
+        hasPlaySparkle = true;
+      }
 
-      ctx.fillStyle = "rgba(0,10,20,0.85)";
-      ctx.strokeStyle = "#33ff33";
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(rx - 85, ry - 45, 170, 25);
-      ctx.strokeRect(rx - 85, ry - 45, 170, 25);
+      let pulseSize = 0;
+      let flareAlpha = 1.0;
+      if (flareProgress < 0.35) {
+        pulseSize = (flareProgress / 0.35) * 38;
+        flareAlpha = 1.0;
+      } else {
+        pulseSize = 38 * (1.0 - (flareProgress - 0.35) / 0.65);
+        flareAlpha = 1.0 - (flareProgress - 0.35) / 0.65;
+      }
       
-      ctx.fillStyle = "#33ff33";
-      ctx.font = "bold 10px Courier New";
-      ctx.textAlign = "center";
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${flareAlpha})`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${flareAlpha})`;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = "#00ffff"; // ミノフスキーブルーの美しい発光
       
-      // ホワイトベースはガンダムの回収を宣言！
-      const successMsg = (selectedLaunchSite === "jaburo") ? "🎯 GUNDAM RECOVERED!" : "🎯 ARRIVED & DOCKED!";
-      ctx.fillText(successMsg, rx, ry - 29);
+      ctx.beginPath();
+      // 8方向の鋭く神々しいフレアスリット
+      ctx.lineWidth = 2.2;
+      ctx.moveTo(rx - pulseSize, ry); ctx.lineTo(rx + pulseSize, ry);
+      ctx.moveTo(rx, ry - pulseSize); ctx.lineTo(rx, ry + pulseSize);
+      
+      ctx.lineWidth = 1.0;
+      ctx.moveTo(rx - pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx + pulseSize*0.7, ry + pulseSize*0.7);
+      ctx.moveTo(rx + pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx - pulseSize*0.7, ry + pulseSize*0.7);
+      ctx.stroke();
+      
+      // コア点
+      ctx.beginPath();
+      ctx.arc(rx, ry, Math.min(5, pulseSize * 0.3), 0, Math.PI*2);
+      ctx.fill();
       ctx.restore();
     }
 
-    // 🛸 [NEW-v5.8.2] 離脱中（月へ旅立つフェーズ）は、軌道上の本物のガンダムを非表示（回収済み）にする！
+    // 月への離脱フェーズ（leave_orbit）に入る直前までは、ターゲット（ガンダム等）を消さずに3D画面に表示
     if (launchState !== "leave_orbit") {
       drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt);
     }
-
-  } else {
-    // 通常運用時は衛星アイコンを100%描画
-    drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt);
-
-    if (currentMissionType !== "gundam00") {
-      const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
-      const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
-      ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-      ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
-      ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-
-  // テレメトリの出力更新
-  document.getElementById("hudAlt").textContent = parseInt(slider.value).toLocaleString(); document.getElementById("hudVel").textContent = (currentMissionType === "gundam00") ? "ELEV-MOTORING" : Math.round(v * 3.6).toLocaleString(); document.getElementById("hudMach").textContent = (currentMissionType === "gundam00") ? "VARIABLE" : (v * 3.6 / 1225).toFixed(1); const pS = (2*Math.PI*r)/v, pH = Math.floor(pS/3600), pM = Math.floor((pS%3600)/60); document.getElementById("hudPeriod").textContent = (currentMissionType === "gundam00") ? "24h (SYNCED)" : (pH > 0 ? `${pH}h ${pM}m` : `${pM}m`);
-  
-  const statusEl = document.getElementById("hudStatus"); 
-  
-  // 🛰️ [NEW-v5.8.2] システムステータスをホワイトベース離脱フェーズに対応
-  if (launchState === "leave_orbit") {
-    statusEl.textContent = "🚀 HYPER-DRIVE (MOON BOUND)";
-    statusEl.style.color = "#66aaff";
-  } else if (currentMissionType === "gundam00") { 
-    statusEl.textContent = `🛗 ACTIVE ASCENT (${elevatorDirection > 0 ? "👉UP" : "👈DOWN"})`; statusEl.style.color = "cyan"; 
-  } else if (slider.value < 200) { 
-    statusEl.textContent = "⚠️ RE-ENTRY DANGER"; statusEl.style.color = "#f33"; 
-  } else if (slider.value == 35786 && incDeg == 0) { 
-    statusEl.textContent = "🔒 GEO SYNC LOCK"; statusEl.style.color = "yellow"; 
-  } else if (slider.value < 2000) { 
-    statusEl.textContent = "NOMINAL (LEO)"; statusEl.style.color = "#66aaff"; 
-  } else if (slider.value < 35786) { 
-    statusEl.textContent = "NOMINAL (MEO)"; statusEl.style.color = "#66ff99"; 
+    
   } else { 
-    statusEl.textContent = "NOMINAL (HEO)"; statusEl.style.color = "#ffaa00"; 
+    drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); 
   }
-  
-  const hText = Math.floor(t/3600), mText = Math.floor((t%3600)/60), sText = Math.floor(t%60); document.getElementById("timeText").textContent = `ELAPSED: ${String(hText).padStart(2,'0')}:${String(mText).padStart(2,'0')}:${String(sText).padStart(2,'0')}`;
+
+  // 補助ガイド点線
+  if (currentMissionType !== "gundam00" && launchState !== "leave_orbit") {
+    const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
+    const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
+    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
   t++; requestAnimationFrame(update);
 }
 
-presetSelect.addEventListener("change", () => { const m = presetSelect.value; if(m !== "custom") { slider.value = satellitePresets[m].alt; incSlider.value = satellitePresets[m].inc; currentMissionType = satellitePresets[m].type; if(m === "gundam00") { elevatorAlt = 0; elevatorDirection = 1; } } else { currentMissionType = "custom"; } playSE("lock"); });
-
-// 発射基地が選択された時に、自動目的衛星ターゲットロックを走らせ、ロックビープ「ピピピッ！」を点灯！
+presetSelect.addEventListener("change", () => { const m = presetSelect.value; if(m !== "custom") { slider.value = satellitePresets[m].alt; incSlider.value = satellitePresets[m].inc; currentMissionType = satellitePresets[m].type; } playSE("lock"); });
 launchSelect.addEventListener("change", () => { 
   selectedLaunchSite = launchSelect.value; 
   if(selectedLaunchSite !== "none") { 
-    playSE("lock"); // ターゲットロックSE！
-    launchBtn.className = "ready";
-    
-    // 目的衛星に完全ロック＆連動
+    playSE("lock"); launchBtn.className = "ready";
     const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
-    presetSelect.value = targetPresetKey;
-    slider.value = satellitePresets[targetPresetKey].alt;
-    incSlider.value = satellitePresets[targetPresetKey].inc;
-    currentMissionType = satellitePresets[targetPresetKey].type;
-  } else {
-    launchBtn.className = "";
-  }
+    presetSelect.value = targetPresetKey; slider.value = satellitePresets[targetPresetKey].alt; incSlider.value = satellitePresets[targetPresetKey].inc; currentMissionType = satellitePresets[targetPresetKey].type;
+  } else { launchBtn.className = ""; }
 });
-
-slider.addEventListener("input", () => { presetSelect.value = "custom"; if(currentMissionType !== "custom") { currentMissionType = "custom"; playSE("custom"); } });
-incSlider.addEventListener("input", () => { presetSelect.value = "custom"; if(currentMissionType !== "custom") { currentMissionType = "custom"; playSE("custom"); } });
-
-// プレビュー環境でのローディングフリーズを防止するトリガーハンドラ群
-earthImg.onload = update;
-earthImg.onerror = () => {
-  console.log("Earth image missing in preview sandbox. Starting with procedural Earth renderer.");
-  update();
-};
-if (earthImg.complete) {
-  update();
-}
+slider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; });
+incSlider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; });
+earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
 </script>
 </body>
 </html>
