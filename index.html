@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ v6.1 (True Meridian Edition)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v6.2 (AI Guidance Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -45,6 +45,29 @@
   #launchBox { background: rgba(255, 204, 0, 0.08); padding: 10px; border-radius: 6px; border: 1px solid #ffcc00; display: flex; flex-direction: column; gap: 8px; }
   #launchSelect { background: #000; color: #ffcc00; border: 1px solid #ffcc00; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
   
+  /* 🎯 管制解説ガイダンスパネルの専用ネオンデザイン */
+  #guidanceBox {
+    background: rgba(0, 255, 204, 0.04);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed #00ffcc;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: left;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.15);
+    min-height: 85px; /* ガタガタスクロール動くのを防ぐための最小高さ */
+  }
+  .guidance-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #00ffcc;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 255, 204, 0.25);
+    padding-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  
   #launchBtn {
     background: #442200; color: #ff9900; border: 1px solid #ff9900; padding: 8px;
     font-weight: bold; font-size: 14px; border-radius: 4px; cursor: not-allowed; opacity: 0.5;
@@ -65,14 +88,15 @@
     #canvas    { order: 3; }                                                  
     #mapBox    { order: 4; width: 100%; margin-top: 15px; }                   
     #launchBox { order: 5; width: 100%; margin-top: 5px; margin-bottom: 5px; }
-    #hudBox    { order: 6; width: 100%; }                                     
+    #guidanceBox { order: 6; width: 100%; margin-top: 5px; margin-bottom: 10px; } /* スマホ時はロケットメニューとHUDの間にぴったり入る！ */
+    #hudBox    { order: 7; width: 100%; }                                     
     #timeBox { position: static; text-align: center; margin-bottom: 15px; }
   }
 </style>
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v6.1</h2>
+<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v6.2</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
@@ -150,6 +174,12 @@
       </select>
       <button id="launchBtn" onclick="triggerLaunch()">🚀 LAUNCH MISSION</button>
     </div>
+
+    <!-- 🎯 管制解説ガイダンスパネル -->
+    <div id="guidanceBox">
+      <div class="guidance-title">📡 AIジェムリンの管制ガイダンス</div>
+      <div id="guidanceText">ここにリアルタイム解説が表示されるよ！</div>
+    </div>
   </div>
 </div>
 
@@ -191,6 +221,102 @@ const baseToPresetSyncMap = {
   jaburo: "gundam_reentry"
 };
 
+// 子供にも直感的にわかる、AIジェムリンの管制解説ガイダンスデータベース！
+const guidanceData = {
+  leo: {
+    title: "LEO (低軌道 / ていきどう)",
+    text: "地球から高度0〜2,000kmのエリアだよ！地球に一番近いから、地球をくわしく調べるカメラ（観測）や、宇宙飛行士がくらす宇宙ステーション（ISS）、みんなのネットを繋ぐ通信衛星がたくさん回っているよ！"
+  },
+  meo: {
+    title: "MEO (中軌道 / ちゅうきどう)",
+    text: "高度2,000〜35,786kmのエリアだよ！ここには、車のカーナビやスマホの地図に『今どこにいるか』を教えてくれる、GPS（アメリカ）やGalileo（ヨーロッパ）、北斗（中国）、GLONASS（ロシア）などの『測位（そくい）衛星』たちが集まっているよ！"
+  },
+  geo: {
+    title: "GEO (静止軌道 / せいしきどう)",
+    text: "高度35,786kmのエリアだよ！地球が自転するスピードと、衛星が地球を回るスピードが100%同じ（シンクロ）になる奇跡の指定席！だから地上からはずっと空の一点に止まって見えるんだ。ひまわりや宇宙太陽光発電（SSPS）に最適だよ！"
+  },
+  heo: {
+    title: "HEO (高軌道 / こうきどう)",
+    text: "高度35,786kmを超える、地球からとても遠いエリアだよ！地球の重力がだんだん弱くなり、これ以上遠くに進むと地球を飛び出して月や別の惑星へ向かう『脱出軌道』になるんだ！"
+  },
+  presets: {
+    iss: {
+      title: "ISS (国際宇宙ステーション)",
+      text: "高度約420kmの低軌道を、時速28,000km（マッハ22）という猛スピードで90分に地球を1周している巨大な宇宙の研究所！世界中の宇宙飛行士が一緒にくらして、色んな科学の実験をしているよ！"
+    },
+    hubble: {
+      title: "ハッブル宇宙望遠鏡",
+      text: "高度約525kmの低軌道にいる、宇宙を見るための巨大な目の望遠鏡！大気のない宇宙から見るから、星空をものすごくハッキリ写真に撮れて、宇宙の始まりのナゾをたくさん解き明かしてくれたよ！"
+    },
+    starlink: {
+      title: "スターリンク衛星 (SpaceX)",
+      text: "数千機以上の小さな衛星を低軌道にずらりと並べて、地球上のどこにいても超高速なインターネットが使えるようにするプロジェクト！電波が届きにくい山奥や島でもネットが繋がる魔法のような仕組みだよ！"
+    },
+    daichi: {
+      title: "地球観測衛星だいち2号 (日本)",
+      text: "高度666kmから地球を見守る、日本の目となる衛星！暗闇や雲を突き抜ける特殊なレーダーを使って、地震や火山の噴火、台風などの災害が起きたときに地表の様子を素早くキャッチするよ！"
+    },
+    gps: {
+      title: "GPS Block III (アメリカ)",
+      text: "高度20,200kmの中軌道を回る、アメリカの次世代GPS（測位）衛星！地球の周りに約30機以上がチームで回っていて、みんなのスマホに超正確な現在位置を届けてくれているんだ！"
+    },
+    galileo: {
+      title: "Galileo (欧州連合/ヨーロッパ)",
+      text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！"
+    },
+    beidou: {
+      title: "北斗 / BDS (中国)",
+      text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！"
+    },
+    glonass: {
+      title: "GLONASS (ロシア)",
+      text: "ロシアが高度19,100kmの中軌道に網を張った測位衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！"
+    },
+    michibiki: {
+      title: "準天頂衛星みちびき (日本)",
+      text: "日本の上空で綺麗な『8の字』を描いて動く日本専用 of GPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！"
+    },
+    himawari: {
+      title: "気象衛星ひまわり (日本)",
+      text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！"
+    },
+    ssps: {
+      title: "宇宙太陽光発電衛星 (SSPS)",
+      text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！"
+    },
+    gundam00: {
+      title: "軌道エレベーター天柱 (ガンダム00)",
+      text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電気を運ぶ太いケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！"
+    },
+    gundam_reentry: {
+      title: "大気圏突入限界 (RX-78-2ガンダム)",
+      text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、物凄い空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！"
+    }
+  },
+  launches: {
+    japan: {
+      title: "種子島宇宙センター ⇒ H3",
+      text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！"
+    },
+    usa: {
+      title: "ケネディ宇宙センター ⇒ SpaceShuttle",
+      text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！"
+    },
+    kazakhstan: {
+      title: "バイコヌール宇宙基地 ⇒ Soyuz",
+      text: "カザフスタンの大平原にある世界最古 of 宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシア of GLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！"
+    },
+    france: {
+      title: "ギアナ宇宙センター ⇒ Ariane6",
+      text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！"
+    },
+    jaburo: {
+      title: "秘密基地ジャブロー ⇒ WhiteBase",
+      text: "地球連軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！"
+    }
+  }
+};
+
 let currentMissionType = "custom", t = 0, audioEnabled = false, audioCtx = null;
 let lastAlertTime = 0, nextStarSoundTime = 0, spaceHum = null;
 
@@ -219,9 +345,7 @@ let dockWB_Y3D = 300;
 let lastRocketX3D = 0;
 let lastRocketY3D = 0;
 
-// ====== 2. WORLD MAP DATA (🎯 v6.1 完全差し戻し＆復元完了！) ======
-// 2D世界地図全体のポリゴンデータを一番美しく安定していた元の「経度0度〜360度基準」に戻しました！
-// これにより、ケネディ、バイコヌール、ギアナ、ジャブロー、そして日本（種子島：156px付近）が元の正しい位置に完全復旧します。
+// ====== 2. WORLD MAP DATA (経度0度〜360度基準) ======
 const detailedLandmasses = [
   [{x: 0, y: 15}, {x: 35, y: 15}, {x: 75, y: 25}, {x: 105, y: 20}, {x: 120, y: 30}, {x: 148, y: 35}, {x: 150, y: 50}, {x: 145, y: 65}, {x: 160, y: 75}, {x: 145, y: 75}, {x: 130, y: 95}, {x: 125, y: 110}, {x: 110, y: 90}, {x: 95, y: 92}, {x: 90, y: 75}, {x: 88, y: 95}, {x: 92, y: 115}, {x: 88, y: 135}, {x: 75, y: 155}, {x: 65, y: 155}, {x: 55, y: 130}, {x: 42, y: 105}, {x: 28, y: 95}, {x: 30, y: 78}, {x: 42, y: 75}, {x: 35, y: 70}, {x: 18, y: 68}, {x: 20, y: 58}, {x: 10, y: 52}, {x: 18, y: 44}, {x: 30, y: 46}, {x: 45, y: 52}, {x: 55, y: 62}, {x: 40, y: 68}, {x: 0, y: 62}],
   [{x: 220, y: 15}, {x: 250, y: 20}, {x: 290, y: 25}, {x: 310, y: 35}, {x: 300, y: 65}, {x: 292, y: 73}, {x: 275, y: 85}, {x: 265, y: 95}, {x: 255, y: 75}, {x: 240, y: 55}, {x: 215, y: 40}],
@@ -277,7 +401,7 @@ function playSE(type) {
   
   const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
   if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } 
-  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } 
+  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps" || type==="michibiki" || type==="himawari"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } 
   else if(type==="beep"){ osc.type='sine'; osc.frequency.setValueAtTime(1000, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.001, now+0.1); }
   else if(type==="ignite"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(80, now); osc.frequency.linearRampToValueAtTime(30, now+2.5); gain.gain.setValueAtTime(0.25, now); }
   else if(type==="lock"){ 
@@ -394,7 +518,6 @@ function drawWorldMap() {
 
 function drawGroundTrack(incRad, earthAngle) { mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]); for(let i=0; i<400; i+=4) { const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle; const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100; if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my); } mctx.stroke(); mctx.setLineDash([]); }
 
-// 各衛星固有の極上ドット絵デザイン描画
 function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
   targetCtx.save(); targetCtx.translate(x, y); 
   if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
@@ -445,8 +568,6 @@ function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) 
   targetCtx.restore(); 
 }
 
-function drawBackgroundSatellite(x, y, altitude) { if (altitude < 2000e3) { ctx.fillStyle = "#ff3333"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } else if (altitude < 35786e3) { ctx.fillStyle = "#33ff33"; ctx.fillRect(x - 4, y - 1.5, 8, 3); } else { ctx.fillStyle = "#ffff33"; ctx.fillRect(x - 3, y - 1.5, 6, 3); } }
-
 function triggerLaunch() {
   if (selectedLaunchSite === "none" || launchState !== "idle") return;
   launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
@@ -454,14 +575,54 @@ function triggerLaunch() {
   if (selectedLaunchSite === "jaburo") { playSE("wb_ignite"); } else { playSE("beep"); }
 }
 
-// 🎯 [V6.1 PERFECT FIXED] このシミュレータ地図座標系（左端が経度0度、右端が東経360度）へのマッピング関数群
-// これにより、陸地ポリゴンをいじる大暴挙を完全差し戻しし、スマートな計算のみで日本の真南やエレベーターの位置を100%実現！
+// ====== 4. COORDINATE MAPPING ======
 function toMapX(lonDeg) {
   let lon360 = (lonDeg < 0) ? (lonDeg + 360) : lonDeg;
   return (lon360 / 360) * 400;
 }
 function toMapY(latDeg) {
   return 100 - (latDeg / 90) * 100;
+}
+
+// 🎯 管制解説ガイダンス描画/書き換えモジュール
+function updateGuidancePanel(currentAltKM) {
+  const guidanceTextEl = document.getElementById("guidanceText");
+  const baseSelect = launchSelect.value;
+  const presetValue = presetSelect.value;
+
+  let title = "📡 AIジェムリンの管制ガイダンス";
+  let text = "現在の高度やプリセット、打ち上げ目標に応じた、ジェムリンによるリアルタイム解説がここに表示されるよ！";
+
+  if (baseSelect !== "none") {
+    const data = guidanceData.launches[baseSelect];
+    if (data) {
+      title = `🚀 管制室ボイス: [${data.title}]`;
+      text = data.text;
+    }
+  } else if (presetValue !== "custom") {
+    const data = guidanceData.presets[presetValue];
+    if (data) {
+      title = `🛰️ 衛星ガイダンス: [${data.title}]`;
+      text = data.text;
+    }
+  } else {
+    if (currentAltKM <= 2000) {
+      title = `🛰️ 高度解説: [${guidanceData.leo.title}]`;
+      text = guidanceData.leo.text;
+    } else if (currentAltKM < 35786) {
+      title = `🛰️ 高度解説: [${guidanceData.meo.title}]`;
+      text = guidanceData.meo.text;
+    } else if (currentAltKM === 35786) {
+      title = `🛰️ 高度解説: [${guidanceData.geo.title}]`;
+      text = guidanceData.geo.text;
+    } else {
+      title = `🛰️ 高度解説: [${guidanceData.heo.title}]`;
+      text = guidanceData.heo.text;
+    }
+  }
+
+  document.querySelector("#guidanceBox .guidance-title").textContent = title;
+  guidanceTextEl.textContent = text;
 }
 
 // ====== 5. MAIN LOOP ======
@@ -479,6 +640,7 @@ function update() {
     slider.value = Math.round(elevatorAlt);
   }
 
+  // HUDおよびガイダンス用の高度・速度の計算に影響が出ないよう、リアルタイムの基本高度をパッキング
   let currentAltKM = parseInt(slider.value);
   let targetPresetAlt = satellitePresets[presetSelect.value] ? satellitePresets[presetSelect.value].alt : currentAltKM;
 
@@ -490,11 +652,11 @@ function update() {
   let mx, my;
   
   if (currentMissionType === "himawari") {
-    // 🌐 ひまわり：日本の真南の赤道上である【東経140度、赤道(緯度0度)】に完全固定！
+    // 🌐 ひまわり：日本の真南の赤道上である【東経140度、赤道(緯度0度)】に完全固定
     mx = toMapX(140.0);
     my = toMapY(0.0);
   } else if (currentMissionType === "ssps") {
-    // 🌐 SSPS：ひまわりのすぐ隣【東経135度、赤道(緯度0度)】に完全固定！
+    // 🌐 SSPS：ひまわりのすぐ西隣【東経135度、赤道(緯度0度)】に完全固定
     mx = toMapX(135.0);
     my = toMapY(0.0);
   } else if (currentMissionType === "gundam00") {
@@ -502,8 +664,7 @@ function update() {
     mx = toMapX(120.0);
     my = toMapY(0.0);
   } else if (currentMissionType === "michibiki") {
-    // 🌐 みちびき：日本の東経138度、緯度24度を基準として、日本全国を綺麗にカバーする美しい「8の字地上軌跡」を描き出します！
-    // latDegの周波数を2倍（satAngle*2）にすることで、マップ上で完璧なリサージュ「インフィニティ・エイト」を描画！
+    // 🌐 みちびき：日本の東経138度、緯度22度を基準として、日本全国を綺麗にカバーする美しい「8の字地上軌跡」を描き出します！
     let loopLon = 138 + 10 * Math.sin(satAngle);
     let loopLat = 22 + 18 * Math.sin(satAngle * 2);
     mx = toMapX(loopLon);
@@ -545,23 +706,37 @@ function update() {
   } else if (launchState === "docking_success") {
     currentAltKM = targetPresetAlt; dockingTimer--;
     if (dockingTimer <= 0) {
-      if (selectedLaunchSite === "jaburo") { launchState = "leave_orbit"; leaveOrbitProgress = 0; playSE("wb_ignite"); } 
-      else { launchState = "idle"; mapRocketYOffset = 0; mapRocketXOffset = 0; launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION"; }
+      if (selectedLaunchSite === "jaburo") { 
+        launchState = "leave_orbit"; leaveOrbitProgress = 0; playSE("wb_ignite"); 
+      } 
+      else { 
+        // 🎯 [V6.2.2 FIXED] 通常ロケットのミッション完了時：基地選択メニューをリセットして衛星・高度説明に戻す！
+        launchState = "idle"; 
+        selectedLaunchSite = "none";
+        launchSelect.value = "none";
+        launchBtn.className = ""; 
+        launchBtn.textContent = "🚀 LAUNCH MISSION";
+        mapRocketYOffset = 0; 
+        mapRocketXOffset = 0; 
+      }
     }
   } else if (launchState === "leave_orbit") {
     currentAltKM = Math.floor(targetPresetAlt + (5000 * leaveOrbitProgress));
     leaveOrbitProgress += 0.0022; 
-    if (leaveOrbitProgress >= 1.0) { launchState = "idle"; mapRocketYOffset = 0; mapRocketXOffset = 0; launchBtn.className = "ready"; launchBtn.textContent = "🚀 LAUNCH MISSION"; }
+    if (leaveOrbitProgress >= 1.0) { 
+      // 🎯 [V6.2.2 FIXED] ホワイトベースの離脱ミッション完了時：基地選択メニューをリセットしてガンダム等の説明に戻す！
+      launchState = "idle"; 
+      selectedLaunchSite = "none";
+      launchSelect.value = "none";
+      launchBtn.className = ""; 
+      launchBtn.textContent = "🚀 LAUNCH MISSION";
+      mapRocketYOffset = 0; 
+      mapRocketXOffset = 0; 
+    }
   }
 
   drawGroundTrack(incRad, earthAngle);
   drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
-
-  const trackingEl = document.getElementById("hudTracking");
-  if (launchState === "leave_orbit") { trackingEl.textContent = `🌌 DESTINATION: OUTER SPACE [MOON]`; trackingEl.style.color = "#66aaff"; }
-  else if (launchState === "space_climb") { trackingEl.textContent = `⚡ ${(selectedLaunchSite === "jaburo" ? "DIRECT INJECTION" : "SPACE INJECTION")}: ${(spaceRocketProgress*100).toFixed(0)}%`; trackingEl.style.color = "#00ffcc"; }
-  else if (selectedLaunchSite !== "none") { trackingEl.textContent = `🚀 LOCK: ${rocketBases[selectedLaunchSite].rocket} BASE`; trackingEl.style.color = "#ffcc00"; }
-  else { trackingEl.textContent = "SCANNING SECTOR..."; trackingEl.style.color = "#0fc"; }
 
   // 3D地球
   ctx.save(); ctx.translate(300, 300); ctx.rotate(earthAngle);
@@ -704,6 +879,9 @@ function update() {
   
   const hText = Math.floor(t/3600), mText = Math.floor((t%3600)/60), sText = Math.floor(t%60); document.getElementById("timeText").textContent = `ELAPSED: ${String(hText).padStart(2,'0')}:${String(mText).padStart(2,'0')}:${String(sText).padStart(2,'0')}`;
   
+  // 🎯 GuidancePanelを毎フレーム安全に書き換え
+  updateGuidancePanel(currentAltKM);
+
   t++; requestAnimationFrame(update);
 }
 
