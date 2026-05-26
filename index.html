@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ v6.2 (AI Guidance Edition)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v6.5 (Milky Way & Sound Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -45,27 +45,14 @@
   #launchBox { background: rgba(255, 204, 0, 0.08); padding: 10px; border-radius: 6px; border: 1px solid #ffcc00; display: flex; flex-direction: column; gap: 8px; }
   #launchSelect { background: #000; color: #ffcc00; border: 1px solid #ffcc00; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
   
-  /* 🎯 管制解説ガイダンスパネルの専用ネオンデザイン */
+  /* 管制解説ガイダンスパネルの専用ネオンデザイン */
   #guidanceBox {
     background: rgba(0, 255, 204, 0.04);
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px dashed #00ffcc;
-    color: #fff;
-    font-size: 13px;
-    line-height: 1.6;
-    text-align: left;
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.15);
-    min-height: 85px; /* ガタガタスクロール動くのを防ぐための最小高さ */
+    padding: 15px; border-radius: 8px; border: 1px dashed #00ffcc; color: #fff; font-size: 13px; line-height: 1.6; text-align: left;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.15); min-height: 85px; 
   }
   .guidance-title {
-    font-size: 13px;
-    font-weight: bold;
-    color: #00ffcc;
-    margin-bottom: 6px;
-    border-bottom: 1px solid rgba(0, 255, 204, 0.25);
-    padding-bottom: 4px;
-    letter-spacing: 0.5px;
+    font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 6px; border-bottom: 1px solid rgba(0, 255, 204, 0.25); padding-bottom: 4px; letter-spacing: 0.5px;
   }
   
   #launchBtn {
@@ -84,11 +71,11 @@
     #controlRoomContainer { display: flex; flex-direction: column; align-items: center; }
     #leftOperationalPanel, #rightDataPanel { display: contents; }
     #presetBox { order: 1; width: 100%; margin-top: 10px; margin-bottom: 5px; }   
-    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                  
-    #canvas    { order: 3; }                                                  
+    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                     
+    #canvas    { order: 3; }                                                 
     #mapBox    { order: 4; width: 100%; margin-top: 15px; }                   
     #launchBox { order: 5; width: 100%; margin-top: 5px; margin-bottom: 5px; }
-    #guidanceBox { order: 6; width: 100%; margin-top: 5px; margin-bottom: 10px; } /* スマホ時はロケットメニューとHUDの間にぴったり入る！ */
+    #guidanceBox { order: 6; width: 100%; margin-top: 5px; margin-bottom: 10px; }
     #hudBox    { order: 7; width: 100%; }                                     
     #timeBox { position: static; text-align: center; margin-bottom: 15px; }
   }
@@ -96,7 +83,7 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v6.2</h2>
+<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ v6.5</h2>
 
 <div id="labels">
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
@@ -175,7 +162,6 @@
       <button id="launchBtn" onclick="triggerLaunch()">🚀 LAUNCH MISSION</button>
     </div>
 
-    <!-- 🎯 管制解説ガイダンスパネル -->
     <div id="guidanceBox">
       <div class="guidance-title">📡 AIジェムリンの管制ガイダンス</div>
       <div id="guidanceText">ここにリアルタイム解説が表示されるよ！</div>
@@ -221,99 +207,32 @@ const baseToPresetSyncMap = {
   jaburo: "gundam_reentry"
 };
 
-// 子供にも直感的にわかる、AIジェムリンの管制解説ガイダンスデータベース！
 const guidanceData = {
-  leo: {
-    title: "LEO (低軌道 / ていきどう)",
-    text: "地球から高度0〜2,000kmのエリアだよ！地球に一番近いから、地球をくわしく調べるカメラ（観測）や、宇宙飛行士がくらす宇宙ステーション（ISS）、みんなのネットを繋ぐ通信衛星がたくさん回っているよ！"
-  },
-  meo: {
-    title: "MEO (中軌道 / ちゅうきどう)",
-    text: "高度2,000〜35,786kmのエリアだよ！ここには、車のカーナビやスマホの地図に『今どこにいるか』を教えてくれる、GPS（アメリカ）やGalileo（ヨーロッパ）、北斗（中国）、GLONASS（ロシア）などの『測位（そくい）衛星』たちが集まっているよ！"
-  },
-  geo: {
-    title: "GEO (静止軌道 / せいしきどう)",
-    text: "高度35,786kmのエリアだよ！地球が自転するスピードと、衛星が地球を回るスピードが100%同じ（シンクロ）になる奇跡の指定席！だから地上からはずっと空の一点に止まって見えるんだ。ひまわりや宇宙太陽光発電（SSPS）に最適だよ！"
-  },
-  heo: {
-    title: "HEO (高軌道 / こうきどう)",
-    text: "高度35,786kmを超える、地球からとても遠いエリアだよ！地球の重力がだんだん弱くなり、これ以上遠くに進むと地球を飛び出して月や別の惑星へ向かう『脱出軌道』になるんだ！"
-  },
+  leo: { title: "LEO (低軌道 / ていきどう)", text: "地球から高度0〜2,000kmのエリアだよ！地球に一番近いから、地球をくわしく調べるカメラ（観測）や、宇宙飛行士がくらす宇宙ステーション（ISS）、みんなのネットを繋ぐ通信衛星がたくさん回っているよ！" },
+  meo: { title: "MEO (中軌道 / ちゅうきどう)", text: "高度2,000〜35,786kmのエリアだよ！ここには、車のカーナビやスマホの地図に『今どこにいるか』を教えてくれる、GPS（アメリカ）やGalileo（ヨーロッパ）、北斗（中国）、GLONASS（ロシア）などの『測位（そくい）衛星』たちが集まっているよ！" },
+  geo: { title: "GEO (静止軌道 / せいしきどう)", text: "高度35,786kmのエリアだよ！地球が自転するスピードと、衛星が地球を回るスピードが100%同じ（シンクロ）になる奇跡の指定席！だから地上からはずっと空の一点に止まって見えるんだ。ひまわりや宇宙太陽光発電（SSPS）に最適だよ！" },
+  heo: { title: "HEO (高軌道 / こうきどう)", text: "高度35,786kmを超える、地球からとても遠いエリアだよ！地球の重力がだんだん弱くなり、これ以上遠くに進むと地球を飛び出して月や別の惑星へ向かう『脱出軌道』になるんだ！" },
   presets: {
-    iss: {
-      title: "ISS (国際宇宙ステーション)",
-      text: "高度約420kmの低軌道を、時速28,000km（マッハ22）という猛スピードで90分に地球を1周している巨大な宇宙の研究所！世界中の宇宙飛行士が一緒にくらして、色んな科学の実験をしているよ！"
-    },
-    hubble: {
-      title: "ハッブル宇宙望遠鏡",
-      text: "高度約525kmの低軌道にいる、宇宙を見るための巨大な目の望遠鏡！大気のない宇宙から見るから、星空をものすごくハッキリ写真に撮れて、宇宙の始まりのナゾをたくさん解き明かしてくれたよ！"
-    },
-    starlink: {
-      title: "スターリンク衛星 (SpaceX)",
-      text: "数千機以上の小さな衛星を低軌道にずらりと並べて、地球上のどこにいても超高速なインターネットが使えるようにするプロジェクト！電波が届きにくい山奥や島でもネットが繋がる魔法のような仕組みだよ！"
-    },
-    daichi: {
-      title: "地球観測衛星だいち2号 (日本)",
-      text: "高度666kmから地球を見守る、日本の目となる衛星！暗闇や雲を突き抜ける特殊なレーダーを使って、地震や火山の噴火、台風などの災害が起きたときに地表の様子を素早くキャッチするよ！"
-    },
-    gps: {
-      title: "GPS Block III (アメリカ)",
-      text: "高度20,200kmの中軌道を回る、アメリカの次世代GPS（測位）衛星！地球の周りに約30機以上がチームで回っていて、みんなのスマホに超正確な現在位置を届けてくれているんだ！"
-    },
-    galileo: {
-      title: "Galileo (欧州連合/ヨーロッパ)",
-      text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！"
-    },
-    beidou: {
-      title: "北斗 / BDS (中国)",
-      text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！"
-    },
-    glonass: {
-      title: "GLONASS (ロシア)",
-      text: "ロシアが高度19,100kmの中軌道に網を張った測位衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！"
-    },
-    michibiki: {
-      title: "準天頂衛星みちびき (日本)",
-      text: "日本の上空で綺麗な『8の字』を描いて動く日本専用 of GPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！"
-    },
-    himawari: {
-      title: "気象衛星ひまわり (日本)",
-      text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！"
-    },
-    ssps: {
-      title: "宇宙太陽光発電衛星 (SSPS)",
-      text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！"
-    },
-    gundam00: {
-      title: "軌道エレベーター天柱 (ガンダム00)",
-      text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電気を運ぶ太いケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！"
-    },
-    gundam_reentry: {
-      title: "大気圏突入限界 (RX-78-2ガンダム)",
-      text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、物凄い空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！"
-    }
+    iss: { title: "ISS (国際宇宙ステーション)", text: "高度約420kmの低軌道を、時速28,000km（マッハ22）という猛スピードで90分に地球を1周している巨大な宇宙の研究所！世界中の宇宙飛行士が一緒にくらして、色んな科学の実験をしているよ！" },
+    hubble: { title: "ハッブル宇宙望遠鏡", text: "高度約525kmの低軌道にいる、宇宙を見るための巨大な目の望遠鏡！大気のない宇宙から見るから、星空をものすごくハッキリ写真に撮れて、宇宙の始まりのナゾをたくさん解き明かしてくれたよ！" },
+    starlink: { title: "スターリンク衛星 (SpaceX)", text: "数千機以上の小さな衛星を低軌道にずらりと並べて、地球上のどこにいても超高速なインターネットが使えるようにするプロジェクト！電波が届きにくい山奥や島でもネットが繋がる魔法のような仕組みだよ！" },
+    daichi: { title: "地球観測衛星だいち2号 (日本)", text: "高度666kmから地球を見守る、日本の目となる衛星！暗闇や雲を突き抜ける特殊なレーダーを使って、地震や火山の噴火、台風などの災害が起きたときに地表の様子を素早くキャッチするよ！" },
+    gps: { title: "GPS Block III (アメリカ)", text: "高度20,200kmの中軌道を回る、アメリカの次世代GPS（測位）衛星！地球の周りに約30機以上がチームで回っていて、みんなのスマホに超正確な現在位置を届けてくれているんだ！" },
+    galileo: { title: "Galileo (欧州連合/ヨーロッパ)", text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！" },
+    beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカ of GPSに頼らない、高い精度を誇るシステムだよ！" },
+    glonass: { title: "GLONASS (ロシア)", text: "ロシアが高度19,100kmの中軌道に網を張ったロシアのGLONASS（測位）衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！" },
+    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！" },
+    himawari: { title: "気象衛星ひまわり (日本)", text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！" },
+    ssps: { title: "宇宙太陽光発電衛星 (SSPS)", text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！" },
+    gundam00: { title: "軌道エレベーター天柱 (ガンダム00)", text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電磁ケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！" },
+    gundam_reentry: { title: "大気圏突入限界 (RX-78-2ガンダム)", text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、物sounding空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！" }
   },
   launches: {
-    japan: {
-      title: "種子島宇宙センター ⇒ H3",
-      text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！"
-    },
-    usa: {
-      title: "ケネディ宇宙センター ⇒ SpaceShuttle",
-      text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！"
-    },
-    kazakhstan: {
-      title: "バイコヌール宇宙基地 ⇒ Soyuz",
-      text: "カザフスタンの大平原にある世界最古 of 宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシア of GLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！"
-    },
-    france: {
-      title: "ギアナ宇宙センター ⇒ Ariane6",
-      text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！"
-    },
-    jaburo: {
-      title: "秘密基地ジャブロー ⇒ WhiteBase",
-      text: "地球連軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！"
-    }
+    japan: { title: "種子島宇宙センター ⇒ H3", text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！" },
+    usa: { title: "ケネディ宇宙センター ⇒ SpaceShuttle", text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！" },
+    kazakhstan: { title: "バイコヌール宇宙基地 ⇒ Soyuz", text: "カザフスタンの大平原にある世界最古 of 宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシアのGLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！" },
+    france: { title: "ギアナ宇宙センター ⇒ Ariane6", text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！" },
+    jaburo: { title: "秘密基地ジャブロー ⇒ WhiteBase", text: "地球連邦軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！" }
   }
 };
 
@@ -345,6 +264,10 @@ let dockWB_Y3D = 300;
 let lastRocketX3D = 0;
 let lastRocketY3D = 0;
 
+// 月のリアルタイム座標ホールド
+let moonX = 300;
+let moonY = 300;
+
 // ====== 2. WORLD MAP DATA (経度0度〜360度基準) ======
 const detailedLandmasses = [
   [{x: 0, y: 15}, {x: 35, y: 15}, {x: 75, y: 25}, {x: 105, y: 20}, {x: 120, y: 30}, {x: 148, y: 35}, {x: 150, y: 50}, {x: 145, y: 65}, {x: 160, y: 75}, {x: 145, y: 75}, {x: 130, y: 95}, {x: 125, y: 110}, {x: 110, y: 90}, {x: 95, y: 92}, {x: 90, y: 75}, {x: 88, y: 95}, {x: 92, y: 115}, {x: 88, y: 135}, {x: 75, y: 155}, {x: 65, y: 155}, {x: 55, y: 130}, {x: 42, y: 105}, {x: 28, y: 95}, {x: 30, y: 78}, {x: 42, y: 75}, {x: 35, y: 70}, {x: 18, y: 68}, {x: 20, y: 58}, {x: 10, y: 52}, {x: 18, y: 44}, {x: 30, y: 46}, {x: 45, y: 52}, {x: 55, y: 62}, {x: 40, y: 68}, {x: 0, y: 62}],
@@ -362,61 +285,200 @@ const rocketBases = {
   jaburo:     { name: "AMAZON (Jaburo Base)", x: 295, y: 122, rocket: "WhiteBase" }
 };
 
+// 背景星空
 const stars = [];
-for (let i = 0; i < 250; i++) { stars.push({ x: Math.random() * 600, y: Math.random() * 600, baseAlpha: Math.random() * 0.7 + 0.3, twinkleSpeed: Math.random() * 0.02 + 0.01 }); }
+for (let i = 0; i < 250; i++) { 
+  stars.push({ x: Math.random() * 800 - 100, y: Math.random() * 800 - 100, baseAlpha: Math.random() * 0.7 + 0.3, twinkleSpeed: Math.random() * 0.02 + 0.01 }); 
+}
+
+const milkyWayStars = [];
+for (let i = 0; i < 60; i++) { 
+  milkyWayStars.push({ x: Math.random() * 800 - 400, y: (Math.random() - 0.5) * 80, baseAlpha: Math.random() * 0.8 + 0.2, size: Math.random() * 1.5 + 0.5 }); 
+}
+
+// 🎯【天の川描画改善】：もわもわした星雲ガス塊をシミュレートする不規則パーティクルデータの生成
+const nebulaClouds = [];
+for (let i = 0; i < 22; i++) {
+  nebulaClouds.push({
+    x: Math.random() * 800 - 400,
+    y: (Math.random() - 0.5) * 120,
+    r: Math.random() * 85 + 45,
+    color: Math.random() > 0.55 ? "rgba(0, 255, 204, " : (Math.random() > 0.4 ? "rgba(102, 51, 204, " : "rgba(153, 51, 255, "),
+    alphaScale: Math.random() * 0.06 + 0.02,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
 const multiSats = [];
 for (let i = 0; i < 6; i++) multiSats.push({ alt: 500e3, theta0: (Math.PI*2/6)*i });
 for (let i = 0; i < 4; i++) multiSats.push({ alt: 20000e3, theta0: (Math.PI*2/4)*i });
 for (let i = 0; i < 3; i++) multiSats.push({ alt: 35786e3, theta0: (Math.PI*2/3)*i });
+
 const cityLights = [];
-for (let i = 0; i < 250; i++) { cityLights.push({ angle: Math.random() * Math.PI * 2, brightness: Math.random() * 0.6 + 0.4 }); }
+for (let i = 0; i < 250; i++) { 
+  cityLights.push({ angle: Math.random() * Math.PI * 2, brightness: Math.random() * 0.6 + 0.4 }); 
+}
 
 // ====== 3. AUDIO ENGINE ======
-function initAudio() { if (audioCtx) return; audioCtx = new (window.AudioContext || window.webkitAudioContext)(); spaceHum = audioCtx.createOscillator(); const humGain = audioCtx.createGain(); spaceHum.type = 'sine'; spaceHum.frequency.setValueAtTime(60, audioCtx.currentTime); humGain.gain.setValueAtTime(0.04, audioCtx.currentTime); spaceHum.connect(humGain); humGain.connect(audioCtx.destination); spaceHum.start(); }
-function autoEnableAudio() { if (audioEnabled) return; initAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); audioEnabled = true; const btn = document.getElementById("audioBtn"); btn.textContent = "🔊 AUDIO: ON"; btn.className = "on"; playSE("custom"); }
-function toggleAudio(event) { if (event) event.stopPropagation(); const btn = document.getElementById("audioBtn"); if (!audioEnabled) { initAudio(); if (audioCtx.state === 'suspended') audioCtx.resume(); audioEnabled = true; btn.textContent = "🔊 AUDIO: ON"; btn.className = "on"; playSE("custom"); } else { if (audioCtx) audioCtx.suspend(); audioEnabled = false; btn.textContent = "🔇 AUDIO: OFF"; btn.className = ""; } }
-function playStarSound() { if(!audioEnabled) return; const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(1000 + Math.random()*500, audioCtx.currentTime); gain.gain.setValueAtTime(0.06, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 3.0); }
+function initAudio() { 
+  if (audioCtx) return; 
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+  spaceHum = audioCtx.createOscillator(); 
+  const humGain = audioCtx.createGain(); 
+  spaceHum.type = 'sine'; 
+  spaceHum.frequency.setValueAtTime(60, audioCtx.currentTime); 
+  humGain.gain.setValueAtTime(0.04, audioCtx.currentTime); 
+  spaceHum.connect(humGain); 
+  humGain.connect(audioCtx.destination); 
+  spaceHum.start(); 
+}
 
+function autoEnableAudio() { 
+  if (audioEnabled) return; 
+  initAudio(); 
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+  audioEnabled = true; 
+  const btn = document.getElementById("audioBtn"); 
+  btn.textContent = "🔊 AUDIO: ON"; 
+  btn.className = "on"; 
+  playSE("custom"); 
+}
+
+function toggleAudio(event) { 
+  if (event) event.stopPropagation(); 
+  const btn = document.getElementById("audioBtn"); 
+  if (!audioEnabled) { 
+    initAudio(); 
+    if (audioCtx.state === 'suspended') audioCtx.resume(); 
+    audioEnabled = true; 
+    btn.textContent = "🔊 AUDIO: ON"; 
+    btn.className = "on"; 
+    playSE("custom"); 
+  } else { 
+    if (audioCtx) audioCtx.suspend(); 
+    audioEnabled = false; 
+    btn.textContent = "🔇 AUDIO: OFF"; 
+    btn.className = ""; 
+  } 
+}
+
+function playStarSound() { 
+  if(!audioEnabled || !audioCtx) return; 
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+  osc.type = 'sine'; 
+  osc.frequency.setValueAtTime(1000 + Math.random()*500, audioCtx.currentTime); 
+  gain.gain.setValueAtTime(0.06, audioCtx.currentTime); 
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0); 
+  osc.connect(gain); 
+  gain.connect(audioCtx.destination); 
+  osc.start(); 
+  osc.stop(audioCtx.currentTime + 3.0); 
+}
+
+// 🎯【サウンドシステム】：Web Audio APIシンセをより心地よいレトロハイテク音色へ調整
 function playSE(type) { 
   if(!audioEnabled || !audioCtx) return; 
   const now = audioCtx.currentTime; 
+  
   if(type === "japan_alert") { 
-    for(let i=0; i<3; i++) { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.frequency.setValueAtTime(1800, now + i*0.15); gain.gain.setValueAtTime(0.08, now + i*0.15); gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + i*0.15); osc.stop(now + i*0.15 + 0.08); } 
+    for(let i=0; i<3; i++) { 
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+      osc.frequency.setValueAtTime(1800, now + i*0.15); 
+      gain.gain.setValueAtTime(0.08, now + i*0.15); 
+      gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); 
+      osc.connect(gain); 
+      gain.connect(audioCtx.destination); 
+      osc.start(now + i*0.15); 
+      osc.stop(now + i*0.15 + 0.08); 
+    } 
     return; 
   } 
   
   if (type === "wb_ignite") {
-    const oscLow = audioCtx.createOscillator(), gainLow = audioCtx.createGain();
+    const oscLow = audioCtx.createOscillator(), gainLow = audioCtx.createGain(); 
     const oscHigh = audioCtx.createOscillator(), gainHigh = audioCtx.createGain();
-    oscLow.type = 'sine'; oscLow.frequency.setValueAtTime(90, now); oscLow.frequency.linearRampToValueAtTime(55, now + 3.0);
-    gainLow.gain.setValueAtTime(0.28, now); gainLow.gain.exponentialRampToValueAtTime(0.01, now + 3.0);
-    oscHigh.type = 'triangle'; oscHigh.frequency.setValueAtTime(600, now); oscHigh.frequency.exponentialRampToValueAtTime(1600, now + 2.5);
-    gainHigh.gain.setValueAtTime(0.12, now); gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
-    oscLow.connect(gainLow); gainLow.connect(audioCtx.destination);
+    oscLow.type = 'sine'; 
+    oscLow.frequency.setValueAtTime(90, now); 
+    oscLow.frequency.linearRampToValueAtTime(55, now + 3.0); 
+    gainLow.gain.setValueAtTime(0.28, now); 
+    gainLow.gain.exponentialRampToValueAtTime(0.01, now + 3.0);
+    
+    oscHigh.type = 'triangle'; 
+    oscHigh.frequency.setValueAtTime(600, now); 
+    oscHigh.frequency.exponentialRampToValueAtTime(1600, now + 2.5); 
+    gainHigh.gain.setValueAtTime(0.12, now); 
+    gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+    
+    oscLow.connect(gainLow); gainLow.connect(audioCtx.destination); 
     oscHigh.connect(gainHigh); gainHigh.connect(audioCtx.destination);
-    oscLow.start(); oscLow.stop(now + 3.0);
+    oscLow.start(); oscLow.stop(now + 3.0); 
     oscHigh.start(); oscHigh.stop(now + 3.0);
     return;
   }
   
   const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
-  if(type==="iss"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.8); gain.gain.setValueAtTime(0.05, now); } 
-  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps" || type==="michibiki" || type==="himawari"){ osc.type='sine'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+0.08); osc.frequency.exponentialRampToValueAtTime(700, now+0.4); gain.gain.setValueAtTime(0.08, now); } 
-  else if(type==="beep"){ osc.type='sine'; osc.frequency.setValueAtTime(1000, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.001, now+0.1); }
-  else if(type==="ignite"){ osc.type='sawtooth'; osc.frequency.setValueAtTime(80, now); osc.frequency.linearRampToValueAtTime(30, now+2.5); gain.gain.setValueAtTime(0.25, now); }
+  
+  if(type==="iss"){ 
+    osc.type='sawtooth'; 
+    osc.frequency.setValueAtTime(150, now); 
+    osc.frequency.linearRampToValueAtTime(300, now+0.8); 
+    gain.gain.setValueAtTime(0.05, now); 
+  } 
+  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps" || type==="michibiki" || type==="himawari"){ 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(100, now); 
+    osc.frequency.linearRampToValueAtTime(50, now+0.08); 
+    osc.frequency.exponentialRampToValueAtTime(700, now+0.4); 
+    gain.gain.setValueAtTime(0.08, now); 
+  } 
+  else if(type==="beep"){ 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(1200, now); 
+    gain.gain.setValueAtTime(0.08, now); 
+    gain.gain.exponentialRampToValueAtTime(0.001, now+0.08); 
+  }
+  else if(type==="ignite"){ 
+    osc.type='sawtooth'; 
+    osc.frequency.setValueAtTime(80, now); 
+    osc.frequency.linearRampToValueAtTime(30, now+2.5); 
+    gain.gain.setValueAtTime(0.25, now); 
+  }
   else if(type==="lock"){ 
-    osc.type='sine'; osc.frequency.setValueAtTime(1500, now); gain.gain.setValueAtTime(0.08, now); gain.gain.linearRampToValueAtTime(0.001, now+0.06);
-    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain();
-    osc2.type='sine'; osc2.frequency.setValueAtTime(1800, now+0.06); gain2.gain.setValueAtTime(0.08, now+0.06); gain2.gain.linearRampToValueAtTime(0.001, now+0.12);
-    osc2.connect(gain2); gain2.connect(audioCtx.destination);
-    osc2.start(now+0.06); osc2.stop(now+0.15);
+    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain(); 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(1600, now); 
+    gain.gain.setValueAtTime(0.06, now); 
+    gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+    
+    osc2.type='sine'; 
+    osc2.frequency.setValueAtTime(2200, now+0.04); 
+    gain2.gain.setValueAtTime(0.06, now+0.04); 
+    gain2.gain.exponentialRampToValueAtTime(0.001, now+0.09);
+    
+    osc2.connect(gain2); 
+    gain2.connect(audioCtx.destination); 
+    osc2.start(now+0.04); 
+    osc2.stop(now+0.1);
   }
   else if(type==="success"){ 
-    osc.type='triangle'; osc.frequency.setValueAtTime(523, now); gain.gain.setValueAtTime(0.12, now); osc.frequency.setValueAtTime(659, now+0.12); osc.frequency.setValueAtTime(784, now+0.24); osc.frequency.setValueAtTime(1046, now+0.36); 
-    gain.gain.linearRampToValueAtTime(0.0001, now+0.9);
+    const notes = [523.25, 659.25, 783.99, 1046.50]; 
+    notes.forEach((freq, idx) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(freq, now + idx * 0.08);
+      g.gain.setValueAtTime(0.07, now + idx * 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(now + idx * 0.08);
+      o.stop(now + idx * 0.08 + 0.3);
+    });
+    return;
   }
   else if(type==="sparkle") {
-    const osc1 = audioCtx.createOscillator(), gain1 = audioCtx.createGain(); const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter();
+    const osc1 = audioCtx.createOscillator(), gain1 = audioCtx.createGain(); 
+    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain(); 
+    const filter = audioCtx.createBiquadFilter();
     filter.type = "highpass"; filter.frequency.setValueAtTime(1600, now);
     osc1.type = 'sine'; osc1.frequency.setValueAtTime(1500, now); osc1.frequency.exponentialRampToValueAtTime(4200, now + 1.2); gain1.gain.setValueAtTime(0.1, now); gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
     osc2.type = 'triangle'; osc2.frequency.setValueAtTime(2000, now); osc2.frequency.exponentialRampToValueAtTime(5500, now + 0.9); gain2.gain.setValueAtTime(0.04, now); gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
@@ -424,13 +486,229 @@ function playSE(type) {
     osc1.start(); osc1.stop(now + 1.3); osc2.start(); osc2.stop(now + 1.3);
     return;
   }
-  else { osc.frequency.setValueAtTime(880, now); gain.gain.setValueAtTime(0.05, now); } 
-  gain.gain.linearRampToValueAtTime(0.0001, now+2.5); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(now+2.5); 
+  else { 
+    osc.frequency.setValueAtTime(880, now); 
+    gain.gain.setValueAtTime(0.05, now); 
+  } 
+  
+  gain.gain.linearRampToValueAtTime(0.0001, now+2.5); 
+  osc.connect(gain); 
+  gain.connect(audioCtx.destination); 
+  osc.start(); 
+  osc.stop(now+2.5); 
 }
 
-// ====== 4. DRAWING CORE ======
-function drawStars() { for (let s of stars) { const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.fillRect(s.x, s.y, 2, 2); } }
-function drawOrbitRingInclined(r, incRad, color) { ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += 0.02) { const x3 = r * Math.cos(a), y3 = r * Math.sin(a) * Math.cos(incRad), z3 = r * Math.sin(a) * Math.sin(incRad); const sx = 300 + x3 * scale, sy = 300 + y3 * scale * (1 - z3 / r * 0.4); const alpha = (z3 < 0) ? 0.15 : 1.0; const rgba = color.replace("1)", alpha + ")"); if (a === 0) { ctx.beginPath(); ctx.strokeStyle = rgba; ctx.moveTo(sx, sy); } else { ctx.strokeStyle = rgba; ctx.lineTo(sx, sy); } } ctx.stroke(); }
+// ====== 4. COORDINATE MAPPING ======
+function toMapX(lonDeg) {
+  let lon360 = (lonDeg < 0) ? (lonDeg + 360) : lonDeg; return (lon360 / 360) * 400;
+}
+function toMapY(latDeg) {
+  return 100 - (latDeg / 90) * 100;
+}
+
+// 背景宇宙の統合描画システム（星空自転・SF天の川グラデーション・月公転）
+function drawSpaceBackground(incRad) {
+  // 1. スロー自転を計算 (25分で1周するおだやかなSF回転スピード)
+  const spaceRotationAngle = t * 0.00007;
+
+  // --- A. 回転座標系内での星空と天の川の描画 ---
+  ctx.save();
+  ctx.translate(300, 300); // 画面中央（地球）を回転のピボット軸に
+  ctx.rotate(spaceRotationAngle);
+
+  // 🎯【SF天の川のもわもわ描画】
+  ctx.save();
+  ctx.rotate(Math.PI / 6); // 30度傾けてSFらしいアングルへ
+  
+  // a) ベースとなる宇宙塵グラデーション
+  let milkyGrad = ctx.createLinearGradient(0, -90, 0, 90);
+  milkyGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  milkyGrad.addColorStop(0.35, "rgba(102, 51, 204, 0.03)");  // 紫の外縁
+  milkyGrad.addColorStop(0.5, "rgba(0, 255, 204, 0.08)");   // 中心の水色
+  milkyGrad.addColorStop(0.65, "rgba(102, 51, 204, 0.03)");
+  milkyGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = milkyGrad;
+  ctx.fillRect(-600, -90, 1200, 180);
+
+  // b) 複数の不規則なガス塊（星雲粒子）をRadialGradientで動的描画して「もわもわ感」を創出！
+  for (let nc of nebulaClouds) {
+    const dynamicAlpha = nc.alphaScale * (1.0 + Math.sin(t * 0.018 + nc.phase) * 0.25);
+    let radialGrad = ctx.createRadialGradient(nc.x, nc.y, 0, nc.x, nc.y, nc.r);
+    radialGrad.addColorStop(0, `${nc.color}${dynamicAlpha})`);
+    radialGrad.addColorStop(0.45, `${nc.color}${dynamicAlpha * 0.4})`);
+    radialGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    
+    ctx.fillStyle = radialGrad;
+    ctx.beginPath();
+    ctx.arc(nc.x, nc.y, nc.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // c) 天の川の中に舞い散る微細な星々
+  for (let ms of milkyWayStars) {
+    const mAlpha = ms.baseAlpha + Math.sin(t * 0.03 + ms.x) * 0.15;
+    ctx.fillStyle = `rgba(255, 255, 255, ${mAlpha})`;
+    ctx.beginPath();
+    ctx.arc(ms.x, ms.y, ms.size, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore(); // 天の川用アングルリセット
+
+  // 【通常背景星の自転描画】
+  ctx.translate(-300, -300);
+  for (let s of stars) { 
+    const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; 
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`; 
+    ctx.fillRect(s.x, s.y, 2, 2); 
+  }
+  ctx.restore(); // 回転を地球や衛星に影響させないようリセット
+
+  // --- B. 月（Moon）の3D連動公転システムの描画 ---
+  drawOrbitRingInclined(R_EARTH + 380000e3, incRad, "rgba(255,255,255,0.06)"); // 月の3D公転軌道
+
+  const moonAngle = t * 0.0002;
+  const moonRadius3D = 250 / scale; // 公転半径
+  
+  moonX = 300 + moonRadius3D * Math.cos(moonAngle) * scale;
+  moonY = 300 + moonRadius3D * Math.sin(moonAngle) * Math.cos(incRad) * scale;
+
+  // 月本体
+  ctx.save();
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#ffffff";
+  ctx.fillStyle = "#fcfaf2";
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 7, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 月の陰影（太陽光が常に右側から当たるため、左半分を暗く影にする）
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(0, 10, 25, 0.55)";
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 7, -Math.PI/2, Math.PI/2, true); // 反時計回りに描画して左半球を陰に
+  ctx.fill();
+  ctx.restore();
+}
+
+// 2D世界地図の描画関数
+function drawWorldMap() {
+  mctx.fillStyle = "#000810"; mctx.fillRect(0,0,400,200);
+  mctx.strokeStyle = "rgba(0, 255, 204, 0.08)"; mctx.lineWidth = 1;
+  for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
+  for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
+  mctx.fillStyle = "rgba(0, 255, 204, 0.15)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.lineWidth = 1.2;
+  detailedLandmasses.forEach(polygon => {
+    if (polygon.length === 0) return;
+    mctx.beginPath(); mctx.moveTo(polygon[0].x, polygon[0].y);
+    for (let i = 1; i < polygon.length; i++) { mctx.lineTo(polygon[i].x, polygon[i].y); }
+    mctx.closePath(); mctx.fill(); mctx.stroke();
+  });
+  for (let key in rocketBases) {
+    const base = rocketBases[key]; mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
+  }
+  if (selectedLaunchSite !== "none") {
+    const activeBase = rocketBases[selectedLaunchSite]; mctx.save();
+    mctx.translate(activeBase.x + mapRocketXOffset, activeBase.y - mapRocketYOffset);
+    mctx.strokeStyle = (launchState === "countdown" || launchState === "map_climb") ? "#ff3333" : "#ffcc00"; 
+    mctx.lineWidth = 1; mctx.strokeRect(-12, -20, 24, 34);
+    const flame = (launchState === "map_climb") ? 8 : 0;
+    if (selectedLaunchSite === "jaburo" && launchState === "map_climb") { mctx.rotate(Math.atan2(-1.0, 1.3) + Math.PI/2); }
+    renderRocketModel(mctx, selectedLaunchSite, flame); mctx.restore();
+  }
+}
+
+// 軌道投影ライン描画関数
+function drawGroundTrack(incRad, earthAngle) {
+  mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]);
+  for(let i=0; i<400; i+=4) {
+    const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle;
+    const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100;
+    if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my);
+  }
+  mctx.stroke(); mctx.setLineDash([]);
+}
+
+// 各衛星固有のデジタルアイコン描画モジュール
+function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
+  targetCtx.save(); targetCtx.translate(x, y); 
+  if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
+  switch(type) { 
+    case "iss": 
+      targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
+      break; 
+    case "hubble": 
+      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
+      break; 
+    case "starlink": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
+      break; 
+    case "daichi": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
+      break; 
+    case "gps": 
+      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
+      break;
+    case "galileo": 
+      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
+      break; 
+    case "beidou": 
+      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
+      break;
+    case "glonass": 
+      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
+      break;
+    case "michibiki": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
+      break; 
+    case "himawari": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
+      break; 
+    case "ssps": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
+      break;
+    case "gundam00": 
+      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); 
+      break; 
+    case "gundam": 
+      targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6); 
+      break; 
+    default: 
+      let coreColor = "yellow"; if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; } targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); targetCtx.fillRect(6, -2, 10, 4); targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2); targetCtx.fillStyle = coreColor; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, 4, 2, 2); 
+      break; 
+  } 
+  targetCtx.restore(); 
+}
+
+// 軌道傾斜輪（3D軌道リング）描画関数
+function drawOrbitRingInclined(r, incRad, color) { 
+  ctx.lineWidth = 2; 
+  for (let a = 0; a < Math.PI * 2; a += 0.02) { 
+    const x3 = r * Math.cos(a);
+    const y3 = r * Math.sin(a) * Math.cos(incRad);
+    const z3 = r * Math.sin(a) * Math.sin(incRad); 
+    const sx = 300 + x3 * scale;
+    const sy = 300 + y3 * scale * (1 - z3 / r * 0.4); 
+    const alpha = (z3 < 0) ? 0.15 : 1.0; 
+    const rgba = color.replace("1)", alpha + ")"); 
+    if (a === 0) { 
+      ctx.beginPath(); 
+      ctx.strokeStyle = rgba; 
+      ctx.moveTo(sx, sy); 
+    } else { 
+      ctx.strokeStyle = rgba; 
+      ctx.lineTo(sx, sy); 
+    } 
+  } 
+  ctx.stroke(); 
+}
+
+// 🚀 打ち上げ・発射トリガー関数
+function triggerLaunch() {
+  if (selectedLaunchSite === "none" || launchState !== "idle") return;
+  launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
+  hasPlaySparkle = false;
+  if (selectedLaunchSite === "jaburo") { playSE("wb_ignite"); } else { playSE("beep"); }
+}
 
 function renderRocketModel(targetCtx, siteKey, flameIntensity=0) {
   switch(siteKey) {
@@ -490,145 +768,33 @@ function drawSF_LockonTarget(targetCtx, x, y, size=18, color="#ff2222") {
   targetCtx.restore();
 }
 
-function drawWorldMap() {
-  mctx.fillStyle = "#000810"; mctx.fillRect(0,0,400,200);
-  mctx.strokeStyle = "rgba(0, 255, 204, 0.08)"; mctx.lineWidth = 1;
-  for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
-  for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
-  mctx.fillStyle = "rgba(0, 255, 204, 0.15)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.lineWidth = 1.2;
-  detailedLandmasses.forEach(polygon => {
-    if (polygon.length === 0) return;
-    mctx.beginPath(); mctx.moveTo(polygon[0].x, polygon[0].y);
-    for (let i = 1; i < polygon.length; i++) { mctx.lineTo(polygon[i].x, polygon[i].y); }
-    mctx.closePath(); mctx.fill(); mctx.stroke();
-  });
-  for (let key in rocketBases) {
-    const base = rocketBases[key]; mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
-  }
-  if (selectedLaunchSite !== "none") {
-    const activeBase = rocketBases[selectedLaunchSite]; mctx.save();
-    mctx.translate(activeBase.x + mapRocketXOffset, activeBase.y - mapRocketYOffset);
-    mctx.strokeStyle = (launchState === "countdown" || launchState === "map_climb") ? "#ff3333" : "#ffcc00"; 
-    mctx.lineWidth = 1; mctx.strokeRect(-12, -20, 24, 34);
-    const flame = (launchState === "map_climb") ? 8 : 0;
-    if (selectedLaunchSite === "jaburo" && launchState === "map_climb") { mctx.rotate(Math.atan2(-1.0, 1.3) + Math.PI/2); }
-    renderRocketModel(mctx, selectedLaunchSite, flame); mctx.restore();
-  }
-}
-
-function drawGroundTrack(incRad, earthAngle) { mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]); for(let i=0; i<400; i+=4) { const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle; const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100; if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my); } mctx.stroke(); mctx.setLineDash([]); }
-
-function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
-  targetCtx.save(); targetCtx.translate(x, y); 
-  if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
-  switch(type) { 
-    case "iss": 
-      targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
-      break; 
-    case "hubble": 
-      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
-      break; 
-    case "starlink": 
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
-      break; 
-    case "daichi": 
-      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
-      break; 
-    case "gps": 
-      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
-      break;
-    case "galileo": 
-      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
-      break; 
-    case "beidou": 
-      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
-      break;
-    case "glonass": 
-      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
-      break;
-    case "michibiki": 
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
-      break; 
-    case "himawari": 
-      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
-      break; 
-    case "ssps": 
-      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
-      break;
-    case "gundam00": 
-      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); 
-      break; 
-    case "gundam": 
-      targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6); 
-      break; 
-    default: 
-      let coreColor = "yellow"; if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; } targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); targetCtx.fillRect(6, -2, 10, 4); targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2); targetCtx.fillStyle = coreColor; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, 4, 2, 2); 
-      break; 
-  } 
-  targetCtx.restore(); 
-}
-
-function triggerLaunch() {
-  if (selectedLaunchSite === "none" || launchState !== "idle") return;
-  launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
-  hasPlaySparkle = false;
-  if (selectedLaunchSite === "jaburo") { playSE("wb_ignite"); } else { playSE("beep"); }
-}
-
-// ====== 4. COORDINATE MAPPING ======
-function toMapX(lonDeg) {
-  let lon360 = (lonDeg < 0) ? (lonDeg + 360) : lonDeg;
-  return (lon360 / 360) * 400;
-}
-function toMapY(latDeg) {
-  return 100 - (latDeg / 90) * 100;
-}
-
-// 🎯 管制解説ガイダンス描画/書き換えモジュール
+// 管制解説ガイダンス描画/書き換えモジュール
 function updateGuidancePanel(currentAltKM) {
-  const guidanceTextEl = document.getElementById("guidanceText");
-  const baseSelect = launchSelect.value;
-  const presetValue = presetSelect.value;
-
-  let title = "📡 AIジェムリンの管制ガイダンス";
-  let text = "現在の高度やプリセット、打ち上げ目標に応じた、ジェムリンによるリアルタイム解説がここに表示されるよ！";
+  const guidanceTextEl = document.getElementById("guidanceText"); const baseSelect = launchSelect.value; const presetValue = presetSelect.value;
+  let title = "📡 AIジェムリンの管制ガイダンス"; let text = "現在の高度やプリセット、打ち上げ目標に応じた、ジェムリンによるリアルタイム解説がここに表示されるよ！";
 
   if (baseSelect !== "none") {
-    const data = guidanceData.launches[baseSelect];
-    if (data) {
-      title = `🚀 管制室ボイス: [${data.title}]`;
-      text = data.text;
-    }
+    const data = guidanceData.launches[baseSelect]; if (data) { title = `🚀 管制室ボイス: [${data.title}]`; text = data.text; }
   } else if (presetValue !== "custom") {
-    const data = guidanceData.presets[presetValue];
-    if (data) {
-      title = `🛰️ 衛星ガイダンス: [${data.title}]`;
-      text = data.text;
-    }
+    const data = guidanceData.presets[presetValue]; if (data) { title = `🛰️ 衛星ガイダンス: [${data.title}]`; text = data.text; }
   } else {
-    if (currentAltKM <= 2000) {
-      title = `🛰️ 高度解説: [${guidanceData.leo.title}]`;
-      text = guidanceData.leo.text;
-    } else if (currentAltKM < 35786) {
-      title = `🛰️ 高度解説: [${guidanceData.meo.title}]`;
-      text = guidanceData.meo.text;
-    } else if (currentAltKM === 35786) {
-      title = `🛰️ 高度解説: [${guidanceData.geo.title}]`;
-      text = guidanceData.geo.text;
-    } else {
-      title = `🛰️ 高度解説: [${guidanceData.heo.title}]`;
-      text = guidanceData.heo.text;
-    }
+    if (currentAltKM <= 2000) { title = `🛰️ 高度解説: [${guidanceData.leo.title}]`; text = guidanceData.leo.text; } 
+    else if (currentAltKM < 35786) { title = `🛰️ 高度解説: [${guidanceData.meo.title}]`; text = guidanceData.meo.text; } 
+    else if (currentAltKM === 35786) { title = `🛰️ 高度解説: [${guidanceData.geo.title}]`; text = guidanceData.geo.text; } 
+    else { title = `🛰️ 高度解説: [${guidanceData.heo.title}]`; text = guidanceData.heo.text; }
   }
-
-  document.querySelector("#guidanceBox .guidance-title").textContent = title;
-  guidanceTextEl.textContent = text;
+  document.querySelector("#guidanceBox .guidance-title").textContent = title; guidanceTextEl.textContent = text;
 }
 
 // ====== 5. MAIN LOOP ======
 function update() {
   ctx.clearRect(0,0,600,600); mctx.clearRect(0,0,400,200);
-  drawStars(); drawWorldMap();
+  
+  const alt = slider.value * 1000, incDeg = incSlider.value, incRad = incDeg * Math.PI/180;
+  drawSpaceBackground(incRad); 
+  
+  // 2D世界地図の描画
+  drawWorldMap();
   if (audioEnabled && t >= nextStarSoundTime) { playStarSound(); nextStarSoundTime = t + 180 + Math.random()*180; }
 
   const markerR = R_EARTH * scale;
@@ -640,117 +806,131 @@ function update() {
     slider.value = Math.round(elevatorAlt);
   }
 
-  // HUDおよびガイダンス用の高度・速度の計算に影響が出ないよう、リアルタイムの基本高度をパッキング
   let currentAltKM = parseInt(slider.value);
   let targetPresetAlt = satellitePresets[presetSelect.value] ? satellitePresets[presetSelect.value].alt : currentAltKM;
 
-  const alt = slider.value * 1000, incDeg = incSlider.value, incRad = incDeg * Math.PI/180;
-  altLabel.textContent = slider.value + " km"; incLabel.textContent = incDeg + "°";
   const r = R_EARTH + alt, v = Math.sqrt(G*M / r), omega_sat = (v/r)*10, earthAngle = (2*Math.PI/86164)*10*t;
   const satAngle = (currentMissionType === "gundam00") ? earthAngle : omega_sat * t;
 
   let mx, my;
-  
-  if (currentMissionType === "himawari") {
-    // 🌐 ひまわり：日本の真南の赤道上である【東経140度、赤道(緯度0度)】に完全固定
-    mx = toMapX(140.0);
-    my = toMapY(0.0);
-  } else if (currentMissionType === "ssps") {
-    // 🌐 SSPS：ひまわりのすぐ西隣【東経135度、赤道(緯度0度)】に完全固定
-    mx = toMapX(135.0);
-    my = toMapY(0.0);
-  } else if (currentMissionType === "gundam00") {
-    // 🌐 軌道エレベーター天柱：ガンダム00設定に基づき【東経120度（インドネシア赤道直下）、赤道】に完全固定！
-    mx = toMapX(120.0);
-    my = toMapY(0.0);
-  } else if (currentMissionType === "michibiki") {
-    // 🌐 みちびき：日本の東経138度、緯度22度を基準として、日本全国を綺麗にカバーする美しい「8の字地上軌跡」を描き出します！
-    let loopLon = 138 + 10 * Math.sin(satAngle);
-    let loopLat = 22 + 18 * Math.sin(satAngle * 2);
-    mx = toMapX(loopLon);
-    my = toMapY(loopLat);
+  if (currentMissionType === "himawari") { mx = toMapX(140.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "ssps") { mx = toMapX(135.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "gundam00") { mx = toMapX(120.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "michibiki") {
+    let loopLon = 138 + 10 * Math.sin(satAngle); let loopLat = 22 + 18 * Math.sin(satAngle * 2); mx = toMapX(loopLon); my = toMapY(loopLat);
   } else {
-    // 通常の周回軌道衛星
-    let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360;
-    if (lonDeg > 180) lonDeg -= 360;
-    if (lonDeg < -180) lonDeg += 360;
-    let latDeg = Math.asin(Math.sin(incRad) * Math.sin(satAngle)) * 180 / Math.PI;
-    mx = toMapX(lonDeg);
-    my = toMapY(latDeg);
+    let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360; if (lonDeg > 180) lonDeg -= 360; if (lonDeg < -180) lonDeg += 360;
+    let latDeg = Math.asin(Math.sin(incRad) * Math.sin(satAngle)) * 180 / Math.PI; mx = toMapX(lonDeg); my = toMapY(latDeg);
   }
 
   if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { drawSF_LockonTarget(mctx, mx, my, 22, "#ff3333"); }
 
-  // シーケンスタイムライン管理
   if (launchState === "countdown") {
-    currentAltKM = 0;
-    countdownTimer--; if (countdownTimer % 60 === 0 && countdownTimer > 0) { if (selectedLaunchSite !== "jaburo") playSE("beep"); }
+    currentAltKM = 0; countdownTimer--; if (countdownTimer % 60 === 0 && countdownTimer > 0) { if (selectedLaunchSite !== "jaburo") playSE("beep"); }
     if (countdownTimer <= 0) { launchState = "map_climb"; mapRocketYOffset = 0; mapRocketXOffset = 0; playSE(selectedLaunchSite === "jaburo" ? "wb_ignite" : "ignite"); }
   } else if (launchState === "map_climb") {
-    currentAltKM = Math.min(80, Math.floor(mapRocketYOffset * 2));
-    if (selectedLaunchSite === "jaburo") { mapRocketYOffset += 1.0; mapRocketXOffset += 1.3; } 
-    else { mapRocketYOffset += 1.8; mapRocketXOffset = 0; }
+    currentAltKM = Math.min(80, Math.floor(mapRocketYOffset * 2)); if (selectedLaunchSite === "jaburo") { mapRocketYOffset += 1.0; mapRocketXOffset += 1.3; } else { mapRocketYOffset += 1.8; mapRocketXOffset = 0; }
     const activeBase = rocketBases[selectedLaunchSite];
     if (activeBase.y - mapRocketYOffset < -20 || activeBase.x + mapRocketXOffset > 420) {
-      launchState = "space_climb"; spaceRocketProgress = 0; cachedSatAngleAtLaunch = earthAngle;
-      cachedTargetAngleAtLaunch = satAngle;
-      const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
-      const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
+      launchState = "space_climb"; spaceRocketProgress = 0; cachedSatAngleAtLaunch = earthAngle; cachedTargetAngleAtLaunch = satAngle;
+      const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2; const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
       lastRocketX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale; lastRocketY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
     }
   } else if (launchState === "space_climb") {
-    currentAltKM = Math.floor(targetPresetAlt * spaceRocketProgress);
-    const speedFactor = (selectedLaunchSite === "jaburo") ? 0.004 : (0.0012 + (spaceRocketProgress * 0.009));
-    spaceRocketProgress += speedFactor;
+    currentAltKM = Math.floor(targetPresetAlt * spaceRocketProgress); const speedFactor = (selectedLaunchSite === "jaburo" ? 0.004 : (0.0012 + (spaceRocketProgress * 0.009))); spaceRocketProgress += speedFactor;
     if (spaceRocketProgress >= 1.0) { launchState = "docking_success"; dockingTimer = 90; playSE("success"); dockWB_X3D = lastRocketX3D; dockWB_Y3D = lastRocketY3D; }
   } else if (launchState === "docking_success") {
     currentAltKM = targetPresetAlt; dockingTimer--;
     if (dockingTimer <= 0) {
-      if (selectedLaunchSite === "jaburo") { 
-        launchState = "leave_orbit"; leaveOrbitProgress = 0; playSE("wb_ignite"); 
-      } 
-      else { 
-        // 🎯 [V6.2.2 FIXED] 通常ロケットのミッション完了時：基地選択メニューをリセットして衛星・高度説明に戻す！
-        launchState = "idle"; 
-        selectedLaunchSite = "none";
-        launchSelect.value = "none";
-        launchBtn.className = ""; 
-        launchBtn.textContent = "🚀 LAUNCH MISSION";
-        mapRocketYOffset = 0; 
-        mapRocketXOffset = 0; 
-      }
+      if (selectedLaunchSite === "jaburo") { launchState = "leave_orbit"; leaveOrbitProgress = 0; playSE("wb_ignite"); } 
+      else { launchState = "idle"; selectedLaunchSite = "none"; launchSelect.value = "none"; launchBtn.className = ""; launchBtn.textContent = "🚀 LAUNCH MISSION"; mapRocketYOffset = 0; mapRocketXOffset = 0; }
     }
   } else if (launchState === "leave_orbit") {
-    currentAltKM = Math.floor(targetPresetAlt + (5000 * leaveOrbitProgress));
-    leaveOrbitProgress += 0.0022; 
-    if (leaveOrbitProgress >= 1.0) { 
-      // 🎯 [V6.2.2 FIXED] ホワイトベースの離脱ミッション完了時：基地選択メニューをリセットしてガンダム等の説明に戻す！
-      launchState = "idle"; 
-      selectedLaunchSite = "none";
-      launchSelect.value = "none";
-      launchBtn.className = ""; 
-      launchBtn.textContent = "🚀 LAUNCH MISSION";
-      mapRocketYOffset = 0; 
-      mapRocketXOffset = 0; 
-    }
+    currentAltKM = Math.floor(targetPresetAlt + (5000 * leaveOrbitProgress)); leaveOrbitProgress += 0.0022; 
+    if (leaveOrbitProgress >= 1.0) { launchState = "idle"; selectedLaunchSite = "none"; launchSelect.value = "none"; launchBtn.className = ""; launchBtn.textContent = "🚀 LAUNCH MISSION"; mapRocketYOffset = 0; mapRocketXOffset = 0; }
   }
 
-  drawGroundTrack(incRad, earthAngle);
+  // 軌道投影線の描画
+  drawGroundTrack(incRad, earthAngle); 
+  
+  // カスタムサテライトアイコン描画
   drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
 
-  // 3D地球
-  ctx.save(); ctx.translate(300, 300); ctx.rotate(earthAngle);
-  if (earthImg.complete && earthImg.naturalWidth !== 0) { ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale); } 
-  else {
-    let earthGrad = ctx.createRadialGradient(-R_EARTH*scale*0.3, -R_EARTH*scale*0.3, 0, 0, 0, R_EARTH*scale);
-    earthGrad.addColorStop(0, "#0066cc"); earthGrad.addColorStop(0.6, "#002266"); earthGrad.addColorStop(1, "#00081a");
-    ctx.fillStyle = earthGrad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2); ctx.fill();
-  }
-  let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, R_EARTH * scale); grad.addColorStop(0.3, "rgba(0,0,0,0)"); grad.addColorStop(0.55, "rgba(0,0,0,0.35)"); grad.addColorStop(1, "rgba(0,0,0,0.85)"); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
+  // 🎯【3D地球の照明ロジック修正（光源：右側）】
+  // 自転するテクスチャ/フォールバック海の上に、自転しない太陽光の影マスクを重ねて立体感を完全に整合させます！
+  ctx.save(); 
+  ctx.translate(300, 300); 
 
-  const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); ctx.beginPath(); ctx.fillStyle = "cyan"; ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); ctx.fill();
-  for (let c of cityLights) { const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); if (Math.cos(angle) * 1 + Math.sin(angle) * (-0.3) < 0) { ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; ctx.fillRect(cx_light, cy_light, 2, 2); } }
+  // 1) 地球表面のベース（自転する部分）
+  ctx.save();
+  ctx.rotate(earthAngle);
+  if (earthImg.complete && earthImg.naturalWidth !== 0) { 
+    ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale); 
+  } else {
+    // 画像ロード前の美しい3D表現フォールバックグラデーション（右が明るく、左に向かって暗い基本球体）
+    let earthFallbackGrad = ctx.createRadialGradient(
+      R_EARTH*scale*0.35, -R_EARTH*scale*0.1, 0,
+      0, 0, R_EARTH*scale
+    );
+    earthFallbackGrad.addColorStop(0, "#00aaff"); // 陽の当たるコバルトブルー
+    earthFallbackGrad.addColorStop(0.6, "#0044aa");
+    earthFallbackGrad.addColorStop(1, "#001133");  // 深い海の青
+    ctx.fillStyle = earthFallbackGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore(); // 自転だけリセット
+
+  // 2) 太陽光影マスク（自転しない固定グラデーション。太陽が「右（やや上）」にあるため、影は「左下」へ綺麗に落ちる！）
+  let shadowGrad = ctx.createRadialGradient(
+    R_EARTH * scale * 0.38, -R_EARTH * scale * 0.08, R_EARTH * scale * 0.1,  // 光源のハイライト中心
+    -R_EARTH * scale * 0.15, R_EARTH * scale * 0.05, R_EARTH * scale * 1.15  // 左側へ向かう拡散シャドウ
+  );
+  shadowGrad.addColorStop(0, "rgba(255, 255, 255, 0.06)"); // ほんのり右ハイライト
+  shadowGrad.addColorStop(0.25, "rgba(0, 0, 0, 0)");        // 中間
+  shadowGrad.addColorStop(0.65, "rgba(0, 8, 20, 0.5)");     // 明暗境界（夕暮れ）
+  shadowGrad.addColorStop(0.85, "rgba(0, 4, 12, 0.9)");     // 夜の闇
+  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0.98)");       // 宇宙に馴染ませるエッジ陰影
+  
+  ctx.fillStyle = shadowGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3) 大気散乱の光輪（Limb Glow）を光源方向（右側）に薄くオーバーレイしてSF質感を極限へ
+  let limbGrad = ctx.createRadialGradient(
+    R_EARTH * scale * 0.35, -R_EARTH * scale * 0.08, R_EARTH * scale * 0.88,
+    0, 0, R_EARTH * scale * 1.05
+  );
+  limbGrad.addColorStop(0, "rgba(0, 255, 255, 0)");
+  limbGrad.addColorStop(0.85, "rgba(0, 160, 255, 0.12)");
+  limbGrad.addColorStop(0.96, "rgba(0, 200, 255, 0.42)"); // 照らされた大気の青いリング
+  limbGrad.addColorStop(1.0, "rgba(0, 255, 255, 0)");
+  
+  ctx.fillStyle = limbGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale * 1.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore(); // (300, 300)のトランスレートを終了
+
+  // 🎯【夜の街の明かりの表示判定を修正】
+  // 光源を右(0.4, -0.1)に置いたため、そこから投影される「左側の暗い半球」のみに夜景が輝くように判定ベクトルの内積を同期させます。
+  const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); 
+  ctx.beginPath(); 
+  ctx.fillStyle = "cyan"; 
+  ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); 
+  ctx.fill();
+  
+  for (let c of cityLights) { 
+    const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); 
+    // 太陽(x: 0.4, y: -0.1)と反対の半球＝「夜（影側）」のみ都市光を表示
+    if (Math.cos(angle) * 0.4 + Math.sin(angle) * (-0.1) < 0) { 
+      ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; 
+      ctx.fillRect(cx_light, cy_light, 2, 2); 
+    } 
+  }
   
   drawOrbitRingInclined(R_EARTH + 500e3, incRad, selectedLaunchSite==="usa" ? "rgba(255,50,50,1)" : "rgba(100,150,255,0.4)"); 
   drawOrbitRingInclined(R_EARTH + 21000e3, incRad, (selectedLaunchSite==="france"||selectedLaunchSite==="kazakhstan") ? "rgba(255,50,50,1)" : "rgba(100,255,150,0.4)"); 
@@ -758,114 +938,90 @@ function update() {
   drawOrbitRingInclined(r, incRad, "rgba(255,255,255,0.8)");
 
   const satX = 300 + r * Math.cos(satAngle) * scale, satY = 300 + r * Math.sin(satAngle) * Math.cos(incRad) * scale;
-  
   if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { drawSF_LockonTarget(ctx, satX, satY, 26, "#ff3333"); }
 
   if (currentMissionType === "gundam00") {
-    const geoR = R_EARTH + 35786e3;
-    const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle);
+    const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle);
     const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale;
     ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
     ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
-    ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
   }
 
   if (currentMissionType === "ssps") {
-    ctx.save(); ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(t*0.1)*0.2})`; ctx.lineWidth = 1 + Math.random()*2;
-    ctx.setLineDash([5, 15]); ctx.beginPath(); ctx.moveTo(satX, satY); ctx.lineTo(mmx, mmy); ctx.stroke();
+    ctx.save(); ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(t*0.1)*0.2})`; ctx.lineWidth = 1 + Math.random()*2; ctx.setLineDash([5, 15]); ctx.beginPath(); ctx.moveTo(satX, satY); ctx.lineTo(mmx, mmy); ctx.stroke();
     ctx.fillStyle = "#ffd700"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffd700"; ctx.beginPath(); ctx.arc(mmx, mmy, 3 + Math.random()*2, 0, Math.PI*2); ctx.fill(); ctx.restore();
   }
 
+  // 3Dロケット上昇描画
   if (launchState === "space_climb" || launchState === "docking_success" || launchState === "leave_orbit") {
-    const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2;
-    const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
+    const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2; const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
     let rx, ry, pitchAngle, renderScale = 1.5, globalAlpha = 1.0;
 
     if (launchState === "leave_orbit") {
-      const targetX = 470; const targetY = 130; const lerpFactor = Math.pow(leaveOrbitProgress, 1.2);
-      rx = dockWB_X3D + (targetX - dockWB_X3D) * lerpFactor; ry = dockWB_Y3D + (targetY - dockWB_Y3D) * lerpFactor;
-      pitchAngle = Math.atan2(targetY - dockWB_Y3D, targetX - dockWB_X3D);
-      renderScale = 1.5 * (1.0 - leaveOrbitProgress * 0.94); globalAlpha = Math.max(0, 1.0 - leaveOrbitProgress);
-    } 
-    else {
+      const targetX = moonX;
+      const targetY = moonY;
+      
+      const lerpFactor = Math.pow(leaveOrbitProgress, 1.2);
+      rx = dockWB_X3D + (targetX - dockWB_X3D) * lerpFactor;
+      ry = dockWB_Y3D + (targetY - dockWB_Y3D) * lerpFactor;
+      
+      pitchAngle = Math.atan2(targetY - ry, targetX - rx);
+      if (Math.abs(targetX - rx) < 1.0 && Math.abs(targetY - ry) < 1.0) {
+        pitchAngle = Math.atan2(targetY - dockWB_Y3D, targetX - dockWB_X3D);
+      }
+      
+      renderScale = 1.5 * (1.0 - leaveOrbitProgress * 0.94);
+      globalAlpha = Math.max(0, 1.0 - leaveOrbitProgress);
+    } else {
       const currentProgress = (launchState === "docking_success") ? 1.0 : spaceRocketProgress;
       if (selectedLaunchSite === "jaburo") {
         const startX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale; const startY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
-        rx = startX3D + (satX - startX3D) * currentProgress; ry = startY3D + (satY - startY3D) * currentProgress;
-        pitchAngle = Math.atan2(satY - startY3D, satX - startX3D);
-      } 
-      else {
-        const targetOffset = 0.08 * (1.0 - currentProgress); const finalTargetAngleOffset = satAngle - targetOffset;
-        const currentFlightAngle = initialLaunchAngle + (finalTargetAngleOffset - initialLaunchAngle) * currentProgress;
-        const currentRocketR = R_EARTH + (r - R_EARTH) * currentProgress;
+        rx = startX3D + (satX - startX3D) * currentProgress; ry = startY3D + (satY - startY3D) * currentProgress; pitchAngle = Math.atan2(satY - startY3D, satX - startX3D);
+      } else {
+        const targetOffset = 0.08 * (1.0 - currentProgress); const finalTargetAngleOffset = satAngle - targetOffset; const currentFlightAngle = initialLaunchAngle + (finalTargetAngleOffset - initialLaunchAngle) * currentProgress; const currentRocketR = R_EARTH + (r - R_EARTH) * currentProgress;
         rx = 300 + currentRocketR * Math.cos(currentFlightAngle) * scale; ry = 300 + currentRocketR * Math.sin(currentFlightAngle) * Math.cos(incRad) * scale;
-        let rx_diff = rx - lastRocketX3D; let ry_diff = ry - lastRocketY3D; pitchAngle = Math.atan2(ry_diff, rx_diff);
-        if (Math.abs(rx_diff) < 0.001) pitchAngle = currentFlightAngle + Math.PI/2;
+        let rx_diff = rx - lastRocketX3D; let ry_diff = ry - lastRocketY3D; pitchAngle = Math.atan2(ry_diff, rx_diff); if (Math.abs(rx_diff) < 0.001) pitchAngle = currentFlightAngle + Math.PI/2;
       }
     }
     lastRocketX3D = rx; lastRocketY3D = ry;
     
     if (Math.random() > 0.04) {
       if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
-        for (let i = 0; i < 3; i++) {
-          launchSmokeParticles.push({ x: rx, y: ry, vx: -Math.cos(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, vy: -Math.sin(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, size: 8 + Math.random() * 8, life: 48, maxLife: 48, color: Math.random() > 0.4 ? "rgba(0, 240, 255, 0.85)" : "rgba(180, 220, 255, 0.3)" });
-        }
+        for (let i = 0; i < 3; i++) { launchSmokeParticles.push({ x: rx, y: ry, vx: -Math.cos(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, vy: -Math.sin(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, size: 8 + Math.random() * 8, life: 48, maxLife: 48, color: Math.random() > 0.4 ? "rgba(0, 240, 255, 0.85)" : "rgba(180, 220, 255, 0.3)" }); }
       } else if (launchState === "space_climb") {
         launchSmokeParticles.push({ x: rx, y: ry, vx: -Math.cos(pitchAngle)*2 + (Math.random()-0.5)*0.5, vy: -Math.sin(pitchAngle)*2 + (Math.random()-0.5)*0.5, size: 5 + Math.random()*4, life: 30, maxLife: 30, color: (selectedLaunchSite === "jaburo" ? "#00ffff" : "#ffaa00") });
       }
     }
     launchSmokeParticles.forEach((p, idx) => { p.x += p.vx; p.y += p.vy; p.life--; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.life/p.maxLife), 0, Math.PI*2); ctx.fill(); if (p.life <= 0) launchSmokeParticles.splice(idx, 1); });
 
-    ctx.save(); ctx.globalAlpha = globalAlpha; ctx.translate(rx, ry); ctx.rotate(pitchAngle + Math.PI/2); ctx.scale(renderScale, renderScale);
-    renderRocketModel(ctx, selectedLaunchSite, launchState==="docking_success"?0:8);
+    ctx.save(); ctx.globalAlpha = globalAlpha; ctx.translate(rx, ry); ctx.rotate(pitchAngle + Math.PI/2); ctx.scale(renderScale, renderScale); renderRocketModel(ctx, selectedLaunchSite, launchState==="docking_success"?0:8);
     if (launchState === "leave_orbit") { ctx.fillStyle = "#ffffff"; ctx.fillRect(-9, 1, 2, 4); ctx.fillStyle = "#ff2222"; ctx.fillRect(-9, 5, 2, 1); }
     ctx.restore();
     
-    if (launchState === "docking_success") {
-       ctx.fillStyle = "#33ff33"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(selectedLaunchSite==="jaburo"?"🎯 RECOVERED!":"🎯 DOCKED!", rx, ry - 35);
-    }
-    
+    if (launchState === "docking_success") { ctx.fillStyle = "#33ff33"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(selectedLaunchSite==="jaburo"?"🎯 RECOVERED!":"🎯 DOCKED!", rx, ry - 35); }
     if (launchState === "leave_orbit" && leaveOrbitProgress > 0.82) {
-      const flareProgress = (leaveOrbitProgress - 0.82) / 0.18;
-      if (!hasPlaySparkle) { playSE("sparkle"); hasPlaySparkle = true; }
-      let pulseSize = (flareProgress < 0.35) ? ((flareProgress / 0.35) * 38) : (38 * (1.0 - (flareProgress - 0.35) / 0.65));
-      let flareAlpha = (flareProgress < 0.35) ? 1.0 : (1.0 - (flareProgress - 0.35) / 0.65);
+      const flareProgress = (leaveOrbitProgress - 0.82) / 0.18; if (!hasPlaySparkle) { playSE("sparkle"); hasPlaySparkle = true; }
+      let pulseSize = (flareProgress < 0.35) ? ((flareProgress / 0.35) * 38) : (38 * (1.0 - (flareProgress - 0.35) / 0.65)); let flareAlpha = (flareProgress < 0.35) ? 1.0 : (1.0 - (flareProgress - 0.35) / 0.65);
       ctx.save(); ctx.strokeStyle = `rgba(255, 255, 255, ${flareAlpha})`; ctx.fillStyle = `rgba(255, 255, 255, ${flareAlpha})`; ctx.shadowBlur = 18; ctx.shadowColor = "#00ffff"; ctx.beginPath(); ctx.lineWidth = 2.2; ctx.moveTo(rx - pulseSize, ry); ctx.lineTo(rx + pulseSize, ry); ctx.moveTo(rx, ry - pulseSize); ctx.lineTo(rx, ry + pulseSize); ctx.lineWidth = 1.0; ctx.moveTo(rx - pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx + pulseSize*0.7, ry + pulseSize*0.7); ctx.moveTo(rx + pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx - pulseSize*0.7, ry + pulseSize*0.7); ctx.stroke(); ctx.beginPath(); ctx.arc(rx, ry, Math.min(5, pulseSize * 0.3), 0, Math.PI*2); ctx.fill(); ctx.restore();
     }
-
     if (launchState !== "leave_orbit") { drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); }
-  } else { 
-    drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); 
-  }
+  } else { drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); }
 
   if (currentMissionType !== "gundam00" && launchState !== "leave_orbit") {
-    const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy);
-    const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
+    const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy); const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
     ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
   }
 
-  // HUDデータリフレッシュ
   document.getElementById("hudAlt").textContent = currentAltKM.toLocaleString();
-  
   if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
-    document.getElementById("hudVel").textContent = "MINOVSKY-DRIVE MAX";
-    document.getElementById("hudMach").textContent = "WARP-ACCEL";
-    document.getElementById("hudPeriod").textContent = "BOUND FOR MOON";
+    document.getElementById("hudVel").textContent = "MINOVSKY-DRIVE MAX"; document.getElementById("hudMach").textContent = "WARP-ACCEL"; document.getElementById("hudPeriod").textContent = "BOUND FOR MOON";
   } else {
-    const calcR = R_EARTH + (currentAltKM * 1000);
-    const currentV = Math.sqrt(G * M / calcR);
-    const speedKMH = Math.round(currentV * 3.6);
-    
+    const calcR = R_EARTH + (currentAltKM * 1000); const currentV = Math.sqrt(G * M / calcR); const speedKMH = Math.round(currentV * 3.6);
     document.getElementById("hudVel").textContent = (currentMissionType === "gundam00" && launchState==="idle") ? "ELEV-MOTORING" : speedKMH.toLocaleString();
     document.getElementById("hudMach").textContent = (currentMissionType === "gundam00" && launchState==="idle") ? "VARIABLE" : (speedKMH / 1225).toFixed(1);
-    
-    if (launchState === "space_climb" || launchState === "map_climb" || launchState === "countdown") {
-      document.getElementById("hudPeriod").textContent = "CALCULATING...";
-    } else {
-      const pS = (2 * Math.PI * calcR) / currentV, pH = Math.floor(pS / 3600), pM = Math.floor((pS % 3600) / 60);
-      document.getElementById("hudPeriod").textContent = (currentMissionType === "gundam00") ? "24h (SYNCED)" : (pH > 0 ? `${pH}h ${pM}m` : `${pM}m`);
-    }
+    if (launchState === "space_climb" || launchState === "map_climb" || launchState === "countdown") { document.getElementById("hudPeriod").textContent = "CALCULATING..."; } 
+    else { const pS = (2 * Math.PI * calcR) / currentV, pH = Math.floor(pS / 3600), pM = Math.floor((pS % 3600) / 60); document.getElementById("hudPeriod").textContent = (currentMissionType === "gundam00") ? "24h (SYNCED)" : (pH > 0 ? `${pH}h ${pM}m` : `${pM}m`); }
   }
 
   const statusEl = document.getElementById("hudStatus"); 
@@ -877,11 +1033,9 @@ function update() {
   else if (currentAltKM < 35786) { statusEl.textContent = "NOMINAL (MEO)"; statusEl.style.color = "#66ff99"; } 
   else { statusEl.textContent = "NOMINAL (HEO)"; statusEl.style.color = "#ffaa00"; }
   
+  updateGuidancePanel(currentAltKM);
   const hText = Math.floor(t/3600), mText = Math.floor((t%3600)/60), sText = Math.floor(t%60); document.getElementById("timeText").textContent = `ELAPSED: ${String(hText).padStart(2,'0')}:${String(mText).padStart(2,'0')}:${String(sText).padStart(2,'0')}`;
   
-  // 🎯 GuidancePanelを毎フレーム安全に書き換え
-  updateGuidancePanel(currentAltKM);
-
   t++; requestAnimationFrame(update);
 }
 
@@ -889,13 +1043,12 @@ presetSelect.addEventListener("change", () => { const m = presetSelect.value; if
 launchSelect.addEventListener("change", () => { 
   selectedLaunchSite = launchSelect.value; 
   if(selectedLaunchSite !== "none") { 
-    playSE("lock"); launchBtn.className = "ready";
-    const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
+    playSE("lock"); launchBtn.className = "ready"; const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
     presetSelect.value = targetPresetKey; slider.value = satellitePresets[targetPresetKey].alt; incSlider.value = satellitePresets[targetPresetKey].inc; currentMissionType = satellitePresets[targetPresetKey].type;
   } else { launchBtn.className = ""; }
 });
-slider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; });
-incSlider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; });
+slider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; playSE("lock"); });
+incSlider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; playSE("lock"); });
 earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
 </script>
 </body>
