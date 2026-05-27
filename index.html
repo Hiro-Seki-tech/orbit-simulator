@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ v6.5 (Milky Way & Sound Edition)</title>
+<title>宇宙を学ぶ閃きの衛星シミュレータ v6.5 (Stabilized Twilight Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -25,7 +25,7 @@
   #rightDataPanel { flex: 0 0 400px; display: flex; flex-direction: column; gap: 15px; text-align: left; }
   canvas { background:#000; border: 1px solid #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); max-width: 100%; height: auto; }
   
-  /* ロック時アニメーション用トランジション追加 */
+  /* ロック時アニメーション用トランジション */
   #sliderBox, #presetBox, #launchBox { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
 
   #sliderBox { margin-top: 15px; background: rgba(0, 255, 204, 0.05); padding: 15px; border-radius: 8px; display: block; border: 1px solid #00ffcc; text-align: left; }
@@ -224,7 +224,8 @@ const guidanceData = {
     galileo: { title: "Galileo (欧州連合/ヨーロッパ)", text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！" },
     beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！" },
     glonass: { title: "GLONASS (ロシア)", text: "ロシアが高度19,100kmの中軌道に網を張ったロシアのGLONASS（測位）衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！" },
-    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位 of 超正確さでサポートできるんだ！" },
+    /* 🎯【みちびきテキスト修正完了！】：「cm単位 of 超正確さ」を「cm単位の超正確さ」へ美しく校正 */
+    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用 の GPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！" },
     himawari: { title: "気象衛星ひまわり (日本)", text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！" },
     ssps: { title: "宇宙太陽光発電衛星 (SSPS)", text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！" },
     gundam00: { title: "軌道エレベーター天柱 (ガンダム00)", text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電磁ケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！" },
@@ -299,7 +300,7 @@ for (let i = 0; i < 60; i++) {
   milkyWayStars.push({ x: Math.random() * 800 - 400, y: (Math.random() - 0.5) * 80, baseAlpha: Math.random() * 0.8 + 0.2, size: Math.random() * 1.5 + 0.5 }); 
 }
 
-// 🎯【天の川描画改善】：もわもわした星雲ガス塊をシミュレートする不規則パーティクルデータの生成
+// 【天の川描画改善】：もわもわした星雲ガス塊をシミュレートする不規則パーティクルデータの生成
 const nebulaClouds = [];
 for (let i = 0; i < 22; i++) {
   nebulaClouds.push({
@@ -378,7 +379,7 @@ function playStarSound() {
   osc.stop(audioCtx.currentTime + 3.0); 
 }
 
-// 🎯【サウンドシステム】：Web Audio APIシンセをより心地よいレトロハイテク音色へ調整
+// 【サウンドシステム】：Web Audio APIシンセをより心地よいレトロハイテク音色へ調整
 function playSE(type) { 
   if(!audioEnabled || !audioCtx) return; 
   const now = audioCtx.currentTime; 
@@ -519,7 +520,7 @@ function drawSpaceBackground(incRad) {
   ctx.translate(300, 300); // 画面中央（地球）を回転のピボット軸に
   ctx.rotate(spaceRotationAngle);
 
-  // 🎯【SF天の川のもわもわ描画】
+  // 【SF天の川のもわもわ描画】
   ctx.save();
   ctx.rotate(Math.PI / 6); // 30度傾けてSFらしいアングルへ
   
@@ -567,7 +568,7 @@ function drawSpaceBackground(incRad) {
   ctx.restore(); // 回転を地球や衛星に影響させないようリセット
 
   // --- B. 月（Moon）の3D連動公転システムの描画 ---
-  // 🎯【月の軌道の完全独立】：人工衛星の傾斜角(incRad)に影響されない、月独自の美しい固定傾斜角を定義
+  // 【月の軌道の完全独立】：人工衛星の傾斜角(incRad)に影響されない、月独自の美しい固定傾斜角を定義
   const MOON_INC = 23.4 * Math.PI / 180; // 黄道に固定された月独自の公転傾斜角
   drawOrbitRingInclined(R_EARTH + 380000e3, MOON_INC, "rgba(255,255,255,0.06)"); // 月の3D公転軌道
 
@@ -707,7 +708,7 @@ function drawOrbitRingInclined(r, incRad, color) {
   ctx.stroke(); 
 }
 
-// 🚀 打ち上げ・発触发射トリガー関数
+// 🚀 打ち上げ・発射トリガー関数
 function triggerLaunch() {
   if (selectedLaunchSite === "none" || launchState !== "idle") return;
   launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
@@ -804,7 +805,7 @@ function update() {
 
   const markerR = R_EARTH * scale;
 
-  // 🎯【ミッション安全システム】：打ち上げシーケンス実行中は、UIパーツを恒常的にdisabled＆非インタラクティブ化
+  // 【ミッション安全システム】：打ち上げシーケンス実行中は、UIパーツを恒常的にdisabled＆非インタラクティブ化
   const isMissionActive = (launchState !== "idle");
   slider.disabled = isMissionActive;
   incSlider.disabled = isMissionActive;
@@ -820,7 +821,6 @@ function update() {
     sliderBox.style.pointerEvents = "none";
     presetBox.style.opacity = "0.4";
     presetBox.style.pointerEvents = "none";
-    // 基地選択ボックスと発射ボタン部も、飛行中は誤クリックを防ぐため半透明化
     launchBox.style.opacity = "0.6";
   } else {
     sliderBox.style.opacity = "1.0";
@@ -888,8 +888,7 @@ function update() {
   // カスタムサテライトアイコン描画
   drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
 
-  // 🎯【3D地球の照明ロジック修正（光源：右側）】
-  // 自転するテクスチャ/フォールバック海の上に、自転しない太陽光の影マスクを重ねて立体感を完全に整合させます！
+  // 【3D地球の照明ロジック（光源：右側）】
   ctx.save(); 
   ctx.translate(300, 300); 
 
@@ -897,8 +896,7 @@ function update() {
   ctx.save();
   ctx.rotate(earthAngle);
   if (earthImg.complete && earthImg.naturalWidth !== 0) { 
-    // 🎯【四角い正方形フチ切り捨てクリップ】：画像が正方形(earth.jpgなどアルファなし)でも、
-    // 周りの宇宙を黒く塗りつぶさないようにCanvasのクリップ機能で丸く完全にくり抜きます。
+    // 【四角い正方形フチ切り捨てクリップ】：画像が正方形(earth.jpgなどアルファなし)でも丸く完全にくり抜きます
     ctx.beginPath();
     ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
     ctx.clip();
@@ -917,25 +915,27 @@ function update() {
     ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2);
     ctx.fill();
   }
-  ctx.restore(); // 🎯 自転(rotate)だけを解除して、translate(300, 300)は維持！
+  ctx.restore(); // 自転(rotate)だけを解除して、translate(300, 300)は維持！
 
-  // 🎯【2) 太陽光リニア影マスク】
+  // 🎯【2) 太陽光リニア影マスク：影をさらにマイルドにする極上チューニング版】
+  // 太陽が右（やや上）にあるため、影の濃淡が左下（夜）から右上（昼）に向かう直線状の平行光グラデーション。
+  // 最大不透明度（夜の暗さ）を 0.98 から 0.85 程度に落とすことで、夜景のディテールとうっすらとした地形を美しく透かします！
   let shadowGrad = ctx.createLinearGradient(
     -R_EARTH * scale * 0.75, R_EARTH * scale * 0.25,  // 完全に影となる左下領域の始点
     R_EARTH * scale * 0.75, -R_EARTH * scale * 0.25   // 直射日光が当たる右上領域の終点
   );
-  shadowGrad.addColorStop(0, "rgba(0, 4, 12, 0.98)");     // 完全な夜の闇（杉並受電基地や都市光が光るベース）
-  shadowGrad.addColorStop(0.35, "rgba(0, 6, 18, 0.9)");    // 深い夜
-  shadowGrad.addColorStop(0.55, "rgba(5, 10, 25, 0.55)");   // 明暗境界（トワイライトゾーン）
-  shadowGrad.addColorStop(0.72, "rgba(10, 30, 60, 0.1)");   // 早朝の薄明
-  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");        // 昼側は影を100%排除してテクスチャを極彩色に！
+  shadowGrad.addColorStop(0, "rgba(0, 4, 12, 0.85)");     // 🎯 マイルドな夜の闇（0.98から0.85へ）
+  shadowGrad.addColorStop(0.35, "rgba(0, 6, 18, 0.78)");    // 🎯 深い夜（0.9から0.78へ）
+  shadowGrad.addColorStop(0.55, "rgba(5, 10, 25, 0.48)");   // 🎯 明暗境界（0.55から0.48へ）
+  shadowGrad.addColorStop(0.72, "rgba(10, 30, 60, 0.08)");   // 🎯 薄明（0.1から0.08へ）
+  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");        // 昼側は影を完全に排除して極彩色テクスチャ！
   
   ctx.fillStyle = shadowGrad;
   ctx.beginPath();
   ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
   ctx.fill();
 
-  // 🎯【3) 球体エッジ回り込み陰影：球体立体感の追加補正】
+  // 【3) 球体エッジ回り込み陰影：球体立体感の追加補正】
   let sphereGrad = ctx.createRadialGradient(
     0, 0, R_EARTH * scale * 0.78,
     0, 0, R_EARTH * scale
@@ -965,7 +965,7 @@ function update() {
 
   ctx.restore(); // (300, 300)のトランスレートを終了
 
-  // 🎯【夜の街の明かりの表示判定】
+  // 【夜の街の明かりの表示判定】
   const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); 
   ctx.beginPath(); 
   ctx.fillStyle = "cyan"; 
@@ -1058,7 +1058,7 @@ function update() {
 
   if (currentMissionType !== "gundam00" && launchState !== "leave_orbit") {
     const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy); const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
-    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill(); // 🎯【ReferenceError バグ修正完了！】fill() を ctx.fill() に修復
+    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill(); // ReferenceError 対策修復済み
   }
 
   document.getElementById("hudAlt").textContent = currentAltKM.toLocaleString();
@@ -1087,9 +1087,9 @@ function update() {
   t++; requestAnimationFrame(update);
 }
 
-// 🎯【イベント処理内のスライダーラベル連動修正】
+// 【イベント処理内のスライダーラベル連動】
 presetSelect.addEventListener("change", () => { 
-  if (launchState !== "idle") return; // 🎯【飛行中ガード】：シーケンス中は一切の変更を拒否
+  if (launchState !== "idle") return; // 【飛行中ガード】
   const m = presetSelect.value; 
   if(m !== "custom") { 
     slider.value = satellitePresets[m].alt; 
@@ -1102,7 +1102,7 @@ presetSelect.addEventListener("change", () => {
 });
 
 launchSelect.addEventListener("change", () => { 
-  if (launchState !== "idle") return; // 🎯【飛行中ガード】：シーケンス中は一切の変更を拒否
+  if (launchState !== "idle") return; // 【飛行中ガード】
   selectedLaunchSite = launchSelect.value; 
   if(selectedLaunchSite !== "none") { 
     playSE("lock"); launchBtn.className = "ready"; 
@@ -1119,7 +1119,7 @@ launchSelect.addEventListener("change", () => {
 });
 
 slider.addEventListener("input", () => { 
-  if (launchState !== "idle") return; // 🎯【飛行中ガード】
+  if (launchState !== "idle") return; // 【飛行中ガード】
   presetSelect.value = "custom"; 
   currentMissionType = "custom"; 
   altLabel.textContent = slider.value + " km"; 
@@ -1127,7 +1127,7 @@ slider.addEventListener("input", () => {
 });
 
 incSlider.addEventListener("input", () => { 
-  if (launchState !== "idle") return; // 🎯【飛行中ガード】
+  if (launchState !== "idle") return; // 【飛行中ガード】
   presetSelect.value = "custom"; 
   currentMissionType = "custom"; 
   incLabel.textContent = incSlider.value + "°"; 
