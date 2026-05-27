@@ -219,7 +219,7 @@ const guidanceData = {
     daichi: { title: "地球観測衛星だいち2号 (日本)", text: "高度666kmから地球を見守る、日本の目となる衛星！暗闇や雲を突き抜ける特殊なレーダーを使って、地震や火山の噴火、台風などの災害が起きたときに地表の様子を素早くキャッチするよ！" },
     gps: { title: "GPS Block III (アメリカ)", text: "高度20,200kmの中軌道を回る、アメリカの次世代GPS（測位）衛星！地球の周りに約30機以上がチームで回っていて、みんなのスマホに超正確な現在位置を届けてくれているんだ！" },
     galileo: { title: "Galileo (欧州連合/ヨーロッパ)", text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！" },
-    beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカ of GPSに頼らない、高い精度を誇るシステムだよ！" },
+    beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！" },
     glonass: { title: "GLONASS (ロシア)", text: "ロシアが高度19,100kmの中軌道に網を張ったロシアのGLONASS（測位）衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！" },
     michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！" },
     himawari: { title: "気象衛星ひまわり (日本)", text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！" },
@@ -230,7 +230,7 @@ const guidanceData = {
   launches: {
     japan: { title: "種子島宇宙センター ⇒ H3", text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！" },
     usa: { title: "ケネディ宇宙センター ⇒ SpaceShuttle", text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！" },
-    kazakhstan: { title: "バイコヌール宇宙基地 ⇒ Soyuz", text: "カザフスタンの大平原にある世界最古 of 宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシアのGLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！" },
+    kazakhstan: { title: "バイコヌール宇宙基地 ⇒ Soyuz", text: "カザフスタンの大平原にある世界最古の宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシアのGLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！" },
     france: { title: "ギアナ宇宙センター ⇒ Ariane6", text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！" },
     jaburo: { title: "秘密基地ジャブロー ⇒ WhiteBase", text: "地球連邦軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！" }
   }
@@ -564,13 +564,15 @@ function drawSpaceBackground(incRad) {
   ctx.restore(); // 回転を地球や衛星に影響させないようリセット
 
   // --- B. 月（Moon）の3D連動公転システムの描画 ---
-  drawOrbitRingInclined(R_EARTH + 380000e3, incRad, "rgba(255,255,255,0.06)"); // 月の3D公転軌道
+  // 🎯【月の軌道の完全独立】：人工衛星の傾斜角(incRad)に影響されない、月独自の美しい固定傾斜角を定義
+  const MOON_INC = 23.4 * Math.PI / 180; // 黄道に固定された月独自の公転傾斜角
+  drawOrbitRingInclined(R_EARTH + 380000e3, MOON_INC, "rgba(255,255,255,0.06)"); // 月の3D公転軌道
 
   const moonAngle = t * 0.0002;
   const moonRadius3D = 250 / scale; // 公転半径
   
   moonX = 300 + moonRadius3D * Math.cos(moonAngle) * scale;
-  moonY = 300 + moonRadius3D * Math.sin(moonAngle) * Math.cos(incRad) * scale;
+  moonY = 300 + moonRadius3D * Math.sin(moonAngle) * Math.cos(MOON_INC) * scale;
 
   // 月本体
   ctx.save();
@@ -865,6 +867,11 @@ function update() {
   ctx.save();
   ctx.rotate(earthAngle);
   if (earthImg.complete && earthImg.naturalWidth !== 0) { 
+    // 🎯【四角い正方形フチ切り捨てクリップ】：画像が正方形(earth.jpgなどアルファなし)でも、
+    // 周りの宇宙を黒く塗りつぶさないようにCanvasのクリップ機能で丸く完全にくり抜きます。
+    ctx.beginPath();
+    ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+    ctx.clip();
     ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale); 
   } else {
     // 画像ロード前の美しい3D表現フォールバックグラデーション（右が明るく、左に向かって暗い基本球体）
