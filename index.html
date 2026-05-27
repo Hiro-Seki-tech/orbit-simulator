@@ -25,6 +25,9 @@
   #rightDataPanel { flex: 0 0 400px; display: flex; flex-direction: column; gap: 15px; text-align: left; }
   canvas { background:#000; border: 1px solid #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); max-width: 100%; height: auto; }
   
+  /* ロック時アニメーション用トランジション追加 */
+  #sliderBox, #presetBox, #launchBox { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
   #sliderBox { margin-top: 15px; background: rgba(0, 255, 204, 0.05); padding: 15px; border-radius: 8px; display: block; border: 1px solid #00ffcc; text-align: left; }
   .slider-row { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
   .slider-row:last-child { margin-bottom: 0; }
@@ -221,15 +224,15 @@ const guidanceData = {
     galileo: { title: "Galileo (欧州連合/ヨーロッパ)", text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！" },
     beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！" },
     glonass: { title: "GLONASS (ロシア)", text: "ロシアが高度19,100kmの中軌道に網を張ったロシアのGLONASS（測位）衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！" },
-    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！" },
+    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位 of 超正確さでサポートできるんだ！" },
     himawari: { title: "気象衛星ひまわり (日本)", text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！" },
     ssps: { title: "宇宙太陽光発電衛星 (SSPS)", text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！" },
     gundam00: { title: "軌道エレベーター天柱 (ガンダム00)", text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電磁ケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！" },
-    gundam_reentry: { title: "大気圏突入限界 (RX-78-2ガンダム)", text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、物sounding空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！" }
+    gundam_reentry: { title: "大気圏突入限界 (RX-78-2ガンダム)", text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！" }
   },
   launches: {
     japan: { title: "種子島宇宙センター ⇒ H3", text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！" },
-    usa: { title: "ケネディ宇宙センター ⇒ SpaceShuttle", text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！" },
+    usa: { title: "ケネディ宇宙センター ⇒ SpaceShuttle", text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走する ISSへと追いかけ、精密なドッキングを挑むんだ！" },
     kazakhstan: { title: "バイコヌール宇宙基地 ⇒ Soyuz", text: "カザフスタンの大平原にある世界最古の宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシアのGLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！" },
     france: { title: "ギアナ宇宙センター ⇒ Ariane6", text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！" },
     jaburo: { title: "秘密基地ジャブロー ⇒ WhiteBase", text: "地球連邦軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！" }
@@ -704,7 +707,7 @@ function drawOrbitRingInclined(r, incRad, color) {
   ctx.stroke(); 
 }
 
-// 🚀 打ち上げ・発射トリガー関数
+// 🚀 打ち上げ・発触发射トリガー関数
 function triggerLaunch() {
   if (selectedLaunchSite === "none" || launchState !== "idle") return;
   launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
@@ -801,11 +804,38 @@ function update() {
 
   const markerR = R_EARTH * scale;
 
+  // 🎯【ミッション安全システム】：打ち上げシーケンス実行中は、UIパーツを恒常的にdisabled＆非インタラクティブ化
+  const isMissionActive = (launchState !== "idle");
+  slider.disabled = isMissionActive;
+  incSlider.disabled = isMissionActive;
+  presetSelect.disabled = isMissionActive;
+  launchSelect.disabled = isMissionActive;
+
+  const sliderBox = document.getElementById("sliderBox");
+  const presetBox = document.getElementById("presetBox");
+  const launchBox = document.getElementById("launchBox");
+
+  if (isMissionActive) {
+    sliderBox.style.opacity = "0.4";
+    sliderBox.style.pointerEvents = "none";
+    presetBox.style.opacity = "0.4";
+    presetBox.style.pointerEvents = "none";
+    // 基地選択ボックスと発射ボタン部も、飛行中は誤クリックを防ぐため半透明化
+    launchBox.style.opacity = "0.6";
+  } else {
+    sliderBox.style.opacity = "1.0";
+    sliderBox.style.pointerEvents = "auto";
+    presetBox.style.opacity = "1.0";
+    presetBox.style.pointerEvents = "auto";
+    launchBox.style.opacity = "1.0";
+  }
+
   if (currentMissionType === "gundam00" && launchState === "idle") {
     elevatorAlt += elevatorSpeed * elevatorDirection;
     if (elevatorAlt >= 35786) { elevatorAlt = 35786; elevatorDirection = -1; } 
     else if (elevatorAlt <= 0) { elevatorAlt = 0; elevatorDirection = 1; }
     slider.value = Math.round(elevatorAlt);
+    altLabel.textContent = slider.value + " km";
   }
 
   let currentAltKM = parseInt(slider.value);
@@ -887,25 +917,38 @@ function update() {
     ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2);
     ctx.fill();
   }
-  ctx.restore(); // 自転だけリセット
+  ctx.restore(); // 🎯 自転(rotate)だけを解除して、translate(300, 300)は維持！
 
-  // 2) 太陽光影マスク（自転しない固定グラデーション。太陽が「右（やや上）」にあるため、影は「左下」へ綺麗に落ちる！）
-  let shadowGrad = ctx.createRadialGradient(
-    R_EARTH * scale * 0.38, -R_EARTH * scale * 0.08, R_EARTH * scale * 0.1,  // 光源のハイライト中心
-    -R_EARTH * scale * 0.15, R_EARTH * scale * 0.05, R_EARTH * scale * 1.15  // 左側へ向かう拡散シャドウ
+  // 🎯【2) 太陽光リニア影マスク】
+  let shadowGrad = ctx.createLinearGradient(
+    -R_EARTH * scale * 0.75, R_EARTH * scale * 0.25,  // 完全に影となる左下領域の始点
+    R_EARTH * scale * 0.75, -R_EARTH * scale * 0.25   // 直射日光が当たる右上領域の終点
   );
-  shadowGrad.addColorStop(0, "rgba(255, 255, 255, 0.06)"); // ほんのり右ハイライト
-  shadowGrad.addColorStop(0.25, "rgba(0, 0, 0, 0)");        // 中間
-  shadowGrad.addColorStop(0.65, "rgba(0, 8, 20, 0.5)");     // 明暗境界（夕暮れ）
-  shadowGrad.addColorStop(0.85, "rgba(0, 4, 12, 0.9)");     // 夜の闇
-  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0.98)");       // 宇宙に馴染ませるエッジ陰影
+  shadowGrad.addColorStop(0, "rgba(0, 4, 12, 0.98)");     // 完全な夜の闇（杉並受電基地や都市光が光るベース）
+  shadowGrad.addColorStop(0.35, "rgba(0, 6, 18, 0.9)");    // 深い夜
+  shadowGrad.addColorStop(0.55, "rgba(5, 10, 25, 0.55)");   // 明暗境界（トワイライトゾーン）
+  shadowGrad.addColorStop(0.72, "rgba(10, 30, 60, 0.1)");   // 早朝の薄明
+  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");        // 昼側は影を100%排除してテクスチャを極彩色に！
   
   ctx.fillStyle = shadowGrad;
   ctx.beginPath();
   ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
   ctx.fill();
 
-  // 3) 大気散乱の光輪（Limb Glow）を光源方向（右側）に薄くオーバーレイしてSF質感を極限へ
+  // 🎯【3) 球体エッジ回り込み陰影：球体立体感の追加補正】
+  let sphereGrad = ctx.createRadialGradient(
+    0, 0, R_EARTH * scale * 0.78,
+    0, 0, R_EARTH * scale
+  );
+  sphereGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  sphereGrad.addColorStop(1, "rgba(0, 4, 12, 0.6)"); // 外周部に極薄い回り込み影
+  
+  ctx.fillStyle = sphereGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4) 大気散乱の光輪（Limb Glow）を光源方向（右側）に薄くオーバーレイしてSF質感を極限へ
   let limbGrad = ctx.createRadialGradient(
     R_EARTH * scale * 0.35, -R_EARTH * scale * 0.08, R_EARTH * scale * 0.88,
     0, 0, R_EARTH * scale * 1.05
@@ -922,8 +965,7 @@ function update() {
 
   ctx.restore(); // (300, 300)のトランスレートを終了
 
-  // 🎯【夜の街の明かりの表示判定を修正】
-  // 光源を右(0.4, -0.1)に置いたため、そこから投影される「左側の暗い半球」のみに夜景が輝くように判定ベクトルの内積を同期させます。
+  // 🎯【夜の街の明かりの表示判定】
   const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); 
   ctx.beginPath(); 
   ctx.fillStyle = "cyan"; 
@@ -932,7 +974,6 @@ function update() {
   
   for (let c of cityLights) { 
     const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); 
-    // 太陽(x: 0.4, y: -0.1)と反対の半球＝「夜（影側）」のみ都市光を表示
     if (Math.cos(angle) * 0.4 + Math.sin(angle) * (-0.1) < 0) { 
       ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; 
       ctx.fillRect(cx_light, cy_light, 2, 2); 
@@ -1017,7 +1058,7 @@ function update() {
 
   if (currentMissionType !== "gundam00" && launchState !== "leave_orbit") {
     const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy); const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
-    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill(); // 🎯【ReferenceError バグ修正完了！】fill() を ctx.fill() に修復
   }
 
   document.getElementById("hudAlt").textContent = currentAltKM.toLocaleString();
@@ -1046,16 +1087,53 @@ function update() {
   t++; requestAnimationFrame(update);
 }
 
-presetSelect.addEventListener("change", () => { const m = presetSelect.value; if(m !== "custom") { slider.value = satellitePresets[m].alt; incSlider.value = satellitePresets[m].inc; currentMissionType = satellitePresets[m].type; } playSE("lock"); });
+// 🎯【イベント処理内のスライダーラベル連動修正】
+presetSelect.addEventListener("change", () => { 
+  if (launchState !== "idle") return; // 🎯【飛行中ガード】：シーケンス中は一切の変更を拒否
+  const m = presetSelect.value; 
+  if(m !== "custom") { 
+    slider.value = satellitePresets[m].alt; 
+    incSlider.value = satellitePresets[m].inc; 
+    currentMissionType = satellitePresets[m].type; 
+    altLabel.textContent = slider.value + " km";
+    incLabel.textContent = incSlider.value + "°";
+  } 
+  playSE("lock"); 
+});
+
 launchSelect.addEventListener("change", () => { 
+  if (launchState !== "idle") return; // 🎯【飛行中ガード】：シーケンス中は一切の変更を拒否
   selectedLaunchSite = launchSelect.value; 
   if(selectedLaunchSite !== "none") { 
-    playSE("lock"); launchBtn.className = "ready"; const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
-    presetSelect.value = targetPresetKey; slider.value = satellitePresets[targetPresetKey].alt; incSlider.value = satellitePresets[targetPresetKey].inc; currentMissionType = satellitePresets[targetPresetKey].type;
-  } else { launchBtn.className = ""; }
+    playSE("lock"); launchBtn.className = "ready"; 
+    const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
+    presetSelect.value = targetPresetKey; 
+    slider.value = satellitePresets[targetPresetKey].alt; 
+    incSlider.value = satellitePresets[targetPresetKey].inc; 
+    currentMissionType = satellitePresets[targetPresetKey].type;
+    altLabel.textContent = slider.value + " km";
+    incLabel.textContent = incSlider.value + "°";
+  } else { 
+    launchBtn.className = ""; 
+  }
 });
-slider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; playSE("lock"); });
-incSlider.addEventListener("input", () => { presetSelect.value = "custom"; currentMissionType = "custom"; playSE("lock"); });
+
+slider.addEventListener("input", () => { 
+  if (launchState !== "idle") return; // 🎯【飛行中ガード】
+  presetSelect.value = "custom"; 
+  currentMissionType = "custom"; 
+  altLabel.textContent = slider.value + " km"; 
+  playSE("lock"); 
+});
+
+incSlider.addEventListener("input", () => { 
+  if (launchState !== "idle") return; // 🎯【飛行中ガード】
+  presetSelect.value = "custom"; 
+  currentMissionType = "custom"; 
+  incLabel.textContent = incSlider.value + "°"; 
+  playSE("lock"); 
+});
+
 earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
 </script>
 </body>
