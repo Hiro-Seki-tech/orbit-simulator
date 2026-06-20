@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Space Studio - Orbit Simulator</title>
+    <!-- Tailwind CSS for high fidelity UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0B0F19 0%, #020408 100%);
+        }
+        .mono {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Custom slider styles */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 9999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #F59E0B;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header Section with Gempick's branding -->
+    <header class="w-full px-6 py-4 glass-panel flex justify-between items-center border-b border-slate-800/50 z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-extrabold tracking-wider bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">GOLDEN SPACE STUDIO</h1>
+                <p class="text-[10px] text-slate-400 tracking-widest uppercase mono">Gempick's COSMO Core v3.1</p>
+            </div>
+        </div>
+        <div class="text-right hidden sm:block">
+            <span class="text-xs text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 mono">
+                COSMO v3.1 PATCHED
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Interactive Workspace -->
+    <main class="flex-grow flex flex-col lg:flex-row items-center justify-center p-4 lg:p-8 gap-8 max-w-7xl mx-auto w-full">
+        
+        <!-- Left Side: Interactive Space Canvas -->
+        <div class="w-full lg:w-3/5 flex flex-col items-center">
+            <div class="relative w-full aspect-square max-w-[500px] rounded-3xl overflow-hidden shadow-2xl shadow-black/80 border border-slate-800/80 bg-slate-950/40">
+                
+                <!-- Cosmic Starfield and Live Render SVG -->
+                <svg id="cosmicCanvas" class="w-full h-full" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Space Background -->
+                        <radialGradient id="spaceBg" cx="50%" cy="50%" r="75%">
+                            <stop offset="0%" stop-color="#0c1326"/>
+                            <stop offset="60%" stop-color="#050811"/>
+                            <stop offset="100%" stop-color="#020306"/>
+                        </radialGradient>
+                        
+                        <!-- Atmospheric Glow Filter for Earth -->
+                        <filter id="earthGlow" x="-30%" y="-30%" width="160%" height="160%">
+                            <feGaussianBlur stdDeviation="12" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+
+                        <!-- Subtle Glow for Satellites, Logos & Thrusters -->
+                        <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+
+                        <!-- Beautiful Earth Radial Gradient -->
+                        <radialGradient id="earthGrad" cx="35%" cy="30%" r="65%">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="50%" stop-color="#1d4ed8" />
+                            <stop offset="85%" stop-color="#0f172a" />
+                            <stop offset="100%" stop-color="#020617" />
+                        </radialGradient>
+                        
+                        <!-- Gold foil for Satellite A -->
+                        <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fbbf24" />
+                            <stop offset="100%" stop-color="#b45309" />
+                        </linearGradient>
+
+                        <!-- Silver metal for Satellite B -->
+                        <linearGradient id="silverMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#f1f5f9" />
+                            <stop offset="100%" stop-color="#64748b" />
+                        </linearGradient>
+
+                        <!-- Dynamically sized Clip Path for Globe Mask -->
+                        <clipPath id="earthClip">
+                            <circle cx="250" cy="250" r="100"/>
+                        </clipPath>
+                    </defs>
+
+                    <!-- Background Deep Space Gradient -->
+                    <rect width="500" height="500" fill="url(#spaceBg)"/>
+
+                    <!-- Starfield Layer -->
+                    <g id="starfield"></g>
+
+                    <!-- Orbit Paths (Behind Earth) -->
+                    <g id="backOrbitsGroup"></g>
+
+                    <!-- Behind Earth Layer (Dynamic Depth Sorting) -->
+                    <g id="behindEarthLayer"></g>
+
+                    <!-- Earth Centerpiece (Masked Globe with Rotational Illusion) -->
+                    <g id="earthGroup" filter="url(#earthGlow)">
+                        <!-- Earth Base Ocean Sphere -->
+                        <circle id="earthBase" cx="250" cy="250" r="100" fill="url(#earthGrad)"/>
+                        
+                        <!-- Masked/Clipped rotating continents and clouds -->
+                        <g clip-path="url(#earthClip)">
+                            
+                            <!-- Continents Group (repeating 400px seamless scroll) -->
+                            <g id="continentsGroup" opacity="0.95">
+                                <g id="continentSet1">
+                                    <!-- North America -->
+                                    <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                                    <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                                    
+                                    <!-- South America -->
+                                    <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                                    <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                                    
+                                    <!-- Europe & Asia -->
+                                    <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                                    <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                                    
+                                    <!-- Africa -->
+                                    <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                                    <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                                    
+                                    <!-- Australia -->
+                                    <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                                    <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                                </g>
+                                <use href="#continentSet1" x="400" y="0"/>
+                            </g>
+
+                            <!-- Clouds Layer (Swirling atmosphere scrolling at faster parallax speed) -->
+                            <g id="cloudsGroup" opacity="0.4">
+                                <g id="cloudsSet1">
+                                    <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                                    <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                                    <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                                </g>
+                                <use href="#cloudsSet1" x="400" y="0"/>
+                            </g>
+                        </g>
+                        
+                        <!-- Shadow overlay for deep 3D night-side -->
+                        <path d="M 250 150 A 100 100 0 0 1 250 350 A 100 100 0 0 0 250 150 Z" fill="#020617" opacity="0.6"/>
+                    </g>
+
+                    <!-- Orbit Paths (In front of Earth) -->
+                    <g id="frontOrbitsGroup"></g>
+
+                    <!-- In Front of Earth Layer (Dynamic Depth Sorting) -->
+                    <g id="inFrontEarthLayer"></g>
+                </svg>
+
+                <!-- Dynamic Telemetry Overlay -->
+                <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-slate-950/80 border border-slate-800/80 px-4 py-2 rounded-xl text-xs tracking-wider mono">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-slate-400">SYSTEM:</span>
+                        <span id="telemetryStatus" class="text-emerald-400">6-AXIS ULTRA-BOLD OK</span>
+                    </div>
+                    <div class="text-slate-500">
+                        FPS: <span id="telemetryFps" class="text-slate-300">60</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Control Panels & Visual Tuning -->
+        <div class="w-full lg:w-2/5 flex flex-col gap-6">
+            
+            <!-- Gempick's Interactive Briefing -->
+            <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500">
+                <h3 class="font-semibold text-amber-400 text-sm mb-2 uppercase tracking-wide">📐 Gempick's Ultra-Bold Micro Brand Tuning</h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Hiro! I engineered a razor-sharp, massive 5x larger <span class="text-sky-400 font-bold mono">COSMO</span> vector logomark. I stripped the cyber-brackets and applied custom `paint-order` strokes to guarantee high-contrast legibility even when rendered as a small interactive button!
+                </p>
+                <p class="text-xs text-amber-300/80 italic mt-2 leading-relaxed">
+                    （ヒロ！ブラケットを取り除いて視認性をクリアにし、ベースサイズを5倍に拡大した極太ベクターロゴ <span class="text-sky-400 font-bold mono">COSMO</span> を設計したわ。特殊な描画順序（paint-order）を用いることで、どれほど小さなボタン表示になっても境界線が文字を潰さず、驚異的な可読性を実現したの！）
+                </p>
+            </div>
+
+            <!-- Parameters Adjustments Dashboard -->
+            <div class="glass-panel p-6 rounded-2xl flex flex-col gap-5 max-h-[500px] overflow-y-auto">
+                <h2 class="text-md font-bold text-slate-100 tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-4 bg-amber-500 rounded"></span> SIMULATION TUNERS
+                </h2>
+
+                <!-- Control: Earth Size & Rotation -->
+                <div class="flex flex-col gap-4 border-b border-slate-800/80 pb-4">
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-xs font-semibold tracking-wide">
+                            <span class="text-slate-400">EARTH DIAMETER (地球の大きさ)</span>
+                            <span id="earthVal" class="text-amber-400 mono">100px</span>
+                        </div>
+                        <input id="sliderEarthSize" type="range" min="60" max="140" value="100">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-xs font-semibold tracking-wide">
+                            <span class="text-slate-400">EARTH SPIN SPEED (自転速度)</span>
+                            <span id="earthSpinVal" class="text-amber-400 mono">0.5 px/f</span>
+                        </div>
+                        <input id="sliderEarthSpin" type="range" min="0" max="20" value="5">
+                    </div>
+                </div>
+
+                <!-- Control: COSMO Rotating Logo -->
+                <div class="border-t border-slate-800/80 pt-2 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mono text-sky-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-sky-400"></span> COSMO Rotating Logo (極太ロゴ回転)
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">RING RADIUS</label>
+                            <input id="sliderCosmoRadius" type="range" min="110" max="170" value="135">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ROTATION SPEED</label>
+                            <input id="sliderCosmoSpeed" type="range" min="1" max="10" value="2">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>RING TILT (リングの傾き)</span>
+                            <span id="cosmoTiltVal" class="text-sky-400 mono">-5°</span>
+                        </div>
+                        <input id="sliderCosmoTilt" type="range" min="-45" max="45" value="-5">
+                    </div>
+                </div>
+
+                <!-- Control: Gundam Mobile Suit Satellite C -->
+                <div class="border-t border-slate-800/80 pt-4 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mono text-yellow-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Gundam Mobile Suit (ガンダム)
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SIZE</label>
+                            <input id="sliderGundRadius" type="range" min="110" max="180" value="155">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SPEED</label>
+                            <input id="sliderGundSpeed" type="range" min="1" max="10" value="5">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>ORBITAL TILT (軌道の傾き)</span>
+                            <span id="gundTiltVal" class="text-yellow-400 mono">35°</span>
+                        </div>
+                        <input id="sliderGundTilt" type="range" min="-45" max="45" value="35">
+                    </div>
+                </div>
+
+                <!-- Control: Satellite A Parameters -->
+                <div class="border-t border-slate-800/80 pt-4 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mono">Satellite A (ゴールド衛星)</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SIZE</label>
+                            <input id="sliderSatRadius" type="range" min="110" max="160" value="115">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SPEED</label>
+                            <input id="sliderSatSpeed" type="range" min="1" max="10" value="3">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>ORBITAL TILT (軌道の傾き)</span>
+                            <span id="satTiltVal" class="text-amber-400 mono">15°</span>
+                        </div>
+                        <input id="sliderSatTilt" type="range" min="-45" max="45" value="15">
+                    </div>
+                </div>
+
+                <!-- Control: Satellite B Parameters -->
+                <div class="border-t border-slate-800/80 pt-4 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mono text-sky-400">Satellite B (科学探査機)</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SIZE</label>
+                            <input id="sliderSatBRadius" type="range" min="130" max="190" value="175">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SPEED</label>
+                            <input id="sliderSatBSpeed" type="range" min="1" max="10" value="7">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>ORBITAL TILT (軌道の傾き)</span>
+                            <span id="satBTiltVal" class="text-sky-400 mono">-25°</span>
+                        </div>
+                        <input id="sliderSatBTilt" type="range" min="-45" max="45" value="-25">
+                    </div>
+                </div>
+
+                <!-- Control: Rocket Parameters -->
+                <div class="border-t border-slate-800/80 pt-4 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mono text-rose-400">Rocket Config (ロケット)</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SIZE</label>
+                            <input id="sliderRockRadius" type="range" min="170" max="240" value="200">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] text-slate-500">ORBIT SPEED</label>
+                            <input id="sliderRockSpeed" type="range" min="1" max="10" value="2">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>ORBITAL TILT (軌道の傾き)</span>
+                            <span id="rockTiltVal" class="text-rose-400 mono">-10°</span>
+                        </div>
+                        <input id="sliderRockTilt" type="range" min="-45" max="45" value="-10">
+                    </div>
+                </div>
+
+                <!-- Action Button Container -->
+                <div class="border-t border-slate-800/80 pt-4 flex flex-col sm:flex-row gap-3">
+                    <button id="btnPlayPause" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-95 text-xs flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        PAUSE SIMULATION
+                    </button>
+                    
+                    <!-- Mandated Download Button -->
+                    <button id="btnDownload" class="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 py-3 rounded-xl font-bold tracking-wider transition-all duration-200 active:scale-95 text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        DOWNLOAD SVG SYMBOL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="w-full text-center py-4 text-[10px] text-slate-600 glass-panel border-t border-slate-900 mt-auto">
+        Designed & Programmed dynamically by Gempick © 2026. Equipped with professional SMIL zero-JS standalone orbit compiler.
+    </footer>
+
+    <script>
+        // Simulation Engine State Variables
+        const config = {
+            earth: { 
+                radius: 100,
+                rotation: 0,
+                cloudRotation: 0,
+                speed: 0.5
+            },
+            satellite: {
+                radius: 115,
+                speed: 0.006,
+                tilt: 15 * (Math.PI / 180),
+                angle: 0
+            },
+            satelliteB: {
+                radius: 175,
+                speed: 0.014,
+                tilt: -25 * (Math.PI / 180),
+                angle: Math.PI / 3
+            },
+            satelliteC: { // Gundam!
+                radius: 155,
+                speed: 0.010,
+                tilt: 35 * (Math.PI / 180),
+                angle: Math.PI * 1.2
+            },
+            cosmo: { // Rotating USJ text!
+                radius: 135,
+                speed: 0.003, // slow glide
+                tilt: -5 * (Math.PI / 180), // gently tilted equatorial plane
+                angle: 0
+            },
+            rocket: {
+                radius: 200,
+                speed: 0.004,
+                tilt: -10 * (Math.PI / 180),
+                angle: Math.PI * 0.7
+            },
+            isPlaying: true
+        };
+
+        // Cache DOM elements
+        const svgCanvas = document.getElementById('cosmicCanvas');
+        const starfield = document.getElementById('starfield');
+        const earthBase = document.getElementById('earthBase');
+        const earthClipCircle = document.querySelector('#earthClip circle');
+        
+        const continentsGroup = document.getElementById('continentsGroup');
+        const cloudsGroup = document.getElementById('cloudsGroup');
+
+        const behindLayer = document.getElementById('behindEarthLayer');
+        const frontLayer = document.getElementById('inFrontEarthLayer');
+        const backOrbitsGroup = document.getElementById('backOrbitsGroup');
+        const frontOrbitsGroup = document.getElementById('frontOrbitsGroup');
+
+        // Dynamic Text Output Elements
+        const earthVal = document.getElementById('earthVal');
+        const earthSpinVal = document.getElementById('earthSpinVal');
+        const satTiltVal = document.getElementById('satTiltVal');
+        const satBTiltVal = document.getElementById('satBTiltVal');
+        const gundTiltVal = document.getElementById('gundTiltVal');
+        const cosmoTiltVal = document.getElementById('cosmoTiltVal');
+        const rockTiltVal = document.getElementById('rockTiltVal');
+        const fpsCounter = document.getElementById('telemetryFps');
+
+        function buildStarfield() {
+            starfield.innerHTML = '';
+            for (let i = 0; i < 60; i++) {
+                const cx = Math.random() * 500;
+                const cy = Math.random() * 500;
+                const r = Math.random() * 1.5 + 0.5;
+                const opacity = Math.random() * 0.7 + 0.3;
+                
+                const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                star.setAttribute('cx', cx);
+                star.setAttribute('cy', cy);
+                star.setAttribute('r', r);
+                star.setAttribute('fill', '#ffffff');
+                star.setAttribute('opacity', opacity);
+                
+                if (Math.random() > 0.5) {
+                    star.innerHTML = `<animate attributeName="opacity" values="${opacity};${opacity*0.3};${opacity}" dur="${3 + Math.random()*5}s" repeatCount="indefinite" />`;
+                }
+                starfield.appendChild(star);
+            }
+        }
+        buildStarfield();
+
+        // Vector Graphics Templates
+        const vectorTemplates = {
+            satA: `
+                <circle cx="-14" cy="0" r="4" fill="#3b82f6" filter="url(#neonGlow)" opacity="0.8">
+                    <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite" />
+                </circle>
+                <rect x="-8" y="-6" width="16" height="12" rx="2" fill="url(#goldFoil)" stroke="#78350f" stroke-width="1" />
+                <rect x="-6" y="-18" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                <line x1="0" y1="-6" x2="0" y2="-12" stroke="#475569" stroke-width="1.5" />
+                <rect x="-6" y="12" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                <line x1="0" y1="6" x2="0" y2="12" stroke="#475569" stroke-width="1.5" />
+                <circle cx="0" cy="0" r="2.5" fill="#f8fafc" />
+            `,
+            satB: `
+                <circle cx="-16" cy="0" r="5" fill="#06b6d4" filter="url(#neonGlow)" opacity="0.9">
+                    <animate attributeName="r" values="3;6;3" dur="0.12s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="-2" cy="0" r="7" fill="url(#silverMetal)" stroke="#475569" stroke-width="1" />
+                <path d="M 8,-9 Q 15,0 8,9" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                <line x1="11" y1="0" x2="18" y2="0" stroke="#f43f5e" stroke-width="1" />
+                <circle cx="18" cy="0" r="1.5" fill="#f43f5e" />
+                <polygon points="-8,-4 -20,-14 -14,-16 -4,-4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                <polygon points="-8,4 -20,14 -14,16 -4,4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+            `,
+            satC: `<!-- Gundam Mobile Suit -->
+                <polygon points="-16,-4 -30,0 -16,4" fill="#38bdf8" filter="url(#neonGlow)">
+                    <animate attributeName="points" values="-16,-4 -30,0 -16,4; -16,-3 -36,0 -16,3; -16,-4 -30,0 -16,4" dur="0.12s" repeatCount="indefinite"/>
+                </polygon>
+                <polygon points="-12,-10 -24,-12 -14,-7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                <polygon points="-12,10 -24,12 -14,7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                <path d="M -14,-12 L -6,-6 L -6,6 L -14,12 Z" fill="#475569" stroke="#334155" stroke-width="1" />
+                <path d="M -12,-16 L -2,-6 L -2,6 L -12,16 Z" fill="#1e293b" stroke="#334155" stroke-width="1" />
+                <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#1d4ed8" stroke="#1e40af" stroke-width="1" />
+                <rect x="-3" y="-5" width="6" height="3" fill="#eab308" />
+                <rect x="-4" y="2" width="8" height="4" fill="#ef4444" />
+                <rect x="-5" y="-1" width="10" height="3" fill="#f8fafc" />
+                <path d="M -2,-6 L 4,-6 L 2,-13 L -4,-13 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5" />
+                <path d="M 2,-13 L 8,-18 L 1,-15 L -6,-18 L -1,-13 Z" fill="#f59e0b" />
+                <polygon points="3,-6 5,-6 4,-4" fill="#ef4444" />
+                <circle cx="2" cy="-9" r="1.2" fill="#22c55e" filter="url(#neonGlow)" />
+                <path d="M -2,4 L 6,4 L 8,8 L 2,8 Z" fill="#f8fafc" />
+                <rect x="4" y="3" width="12" height="3" rx="1" fill="#475569" />
+                <line x1="16" y1="4.5" x2="26" y2="4.5" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+                <path d="M -2,-4 L 4,-4 L 6,-8 L 0,-8 Z" fill="#f8fafc" />
+                <g transform="translate(1, -9) rotate(-15)">
+                    <path d="M -6,-3 L 6,-3 L 4,8 L -4,8 Z" fill="#ef4444" stroke="#f8fafc" stroke-width="1" />
+                    <polygon points="0,-1 1,2 4,2 1,4 2,7 0,5 -2,7 -1,4 -4,2 -1,2" fill="#eab308" />
+                </g>
+            `,
+            cosmo: `<!-- USJ Style COSMO Logo (Ultra-Bold & 5x Larger, Brackets Removed) -->
+                <g filter="url(#neonGlow)">
+                    <!-- Giant futuristic high-contrast text tags for extreme high legibility -->
+                    <text x="0" y="24" font-family="'Share Tech Mono', monospace, sans-serif" font-size="75" font-weight="900" fill="#38bdf8" stroke="#1e40af" stroke-width="5" paint-order="stroke fill" text-anchor="middle" letter-spacing="1">COSMO</text>
+                </g>
+            `,
+            rocket: `
+                <polygon points="-24,0 -12,-6 -12,6" fill="#f97316" filter="url(#neonGlow)">
+                    <animate attributeName="points" values="-24,0 -12,-6 -12,6; -28,0 -12,-5 -12,5; -24,0 -12,-6 -12,6" dur="0.15s" repeatCount="indefinite"/>
+                </polygon>
+                <path d="M 14,0 L -12,-8 L -12,8 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+                <path d="M -12,-8 L -18,-14 L -8,-8 Z" fill="#ef4444" />
+                <path d="M -12,8 L -18,14 L -8,8 Z" fill="#ef4444" />
+                <circle cx="4" cy="0" r="3" fill="#38bdf8" stroke="#1e3a8a" stroke-width="0.5" />
+            `
+        };
+
+        let satelliteElement, satelliteBElement, satelliteCElement, cosmoElement, rocketElement;
+
+        function createActors() {
+            // SATELLITE A
+            satelliteElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            satelliteElement.id = 'dynamicSatellite';
+            satelliteElement.innerHTML = vectorTemplates.satA;
+
+            // SATELLITE B
+            satelliteBElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            satelliteBElement.id = 'dynamicSatelliteB';
+            satelliteBElement.innerHTML = vectorTemplates.satB;
+
+            // SATELLITE C (Gundam)
+            satelliteCElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            satelliteCElement.id = 'dynamicSatelliteC';
+            satelliteCElement.innerHTML = vectorTemplates.satC;
+
+            // COSMO (USJ Rotating Logo)
+            cosmoElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            cosmoElement.id = 'dynamicCosmo';
+            cosmoElement.innerHTML = vectorTemplates.cosmo;
+
+            // ROCKET
+            rocketElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            rocketElement.id = 'dynamicRocket';
+            rocketElement.innerHTML = vectorTemplates.rocket;
+
+            frontLayer.appendChild(satelliteElement);
+            frontLayer.appendChild(satelliteBElement);
+            frontLayer.appendChild(satelliteCElement);
+            frontLayer.appendChild(cosmoElement);
+            frontLayer.appendChild(rocketElement);
+        }
+        createActors();
+
+        function getOrbitProjection(angle, radius, tiltRad) {
+            const xLocal = radius * Math.cos(angle);
+            const zLocal = radius * Math.sin(angle);
+
+            const xProjected = xLocal;
+            const yProjected = - zLocal * Math.sin(tiltRad);
+            const zProjected = zLocal * Math.cos(tiltRad);
+
+            const dx = -radius * Math.sin(angle);
+            const dy = -radius * Math.cos(angle) * Math.sin(tiltRad);
+            const rotationDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+            return {
+                cx: 250 + xProjected,
+                cy: 250 + yProjected,
+                z: zProjected,
+                rotation: rotationDeg
+            };
+        }
+
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+
+        function animateOrbit() {
+            if (config.isPlaying) {
+                // Increment angles
+                config.satellite.angle += config.satellite.speed;
+                config.satelliteB.angle += config.satelliteB.speed;
+                config.satelliteC.angle += config.satelliteC.speed;
+                config.cosmo.angle += config.cosmo.speed;
+                config.rocket.angle += config.rocket.speed;
+                
+                // Wrap angles
+                if (config.satellite.angle > Math.PI * 2) config.satellite.angle -= Math.PI * 2;
+                if (config.satelliteB.angle > Math.PI * 2) config.satelliteB.angle -= Math.PI * 2;
+                if (config.satelliteC.angle > Math.PI * 2) config.satelliteC.angle -= Math.PI * 2;
+                if (config.cosmo.angle > Math.PI * 2) config.cosmo.angle -= Math.PI * 2;
+                if (config.rocket.angle > Math.PI * 2) config.rocket.angle -= Math.PI * 2;
+
+                // Rotate Earth continents & clouds
+                config.earth.rotation -= config.earth.speed;
+                if (config.earth.rotation <= -400) config.earth.rotation += 400;
+                
+                config.earth.cloudRotation -= config.earth.speed * 1.35;
+                if (config.earth.cloudRotation <= -400) config.earth.cloudRotation += 400;
+
+                continentsGroup.setAttribute('transform', `translate(${config.earth.rotation}, 0)`);
+                cloudsGroup.setAttribute('transform', `translate(${config.earth.cloudRotation}, 0)`);
+            }
+
+            // Calculate current 3D projections
+            const satPos = getOrbitProjection(config.satellite.angle, config.satellite.radius, config.satellite.tilt);
+            const satBPos = getOrbitProjection(config.satelliteB.angle, config.satelliteB.radius, config.satelliteB.tilt);
+            const satCPos = getOrbitProjection(config.satelliteC.angle, config.satelliteC.radius, config.satelliteC.tilt);
+            const cosmoPos = getOrbitProjection(config.cosmo.angle, config.cosmo.radius, config.cosmo.tilt);
+            const rockPos = getOrbitProjection(config.rocket.angle, config.rocket.radius, config.rocket.tilt);
+
+            // Render Orbits Behind/InFront
+            renderOrbitPlanes();
+
+            // Handle SATELLITE A
+            const satScale = 1.0 + (satPos.z / config.satellite.radius) * 0.25;
+            satelliteElement.setAttribute('transform', `translate(${satPos.cx}, ${satPos.cy}) rotate(${satPos.rotation}) scale(${satScale * 0.75})`);
+            if (satPos.z < 0) {
+                if (satelliteElement.parentNode !== behindLayer) behindLayer.appendChild(satelliteElement);
+            } else {
+                if (satelliteElement.parentNode !== frontLayer) frontLayer.appendChild(satelliteElement);
+            }
+
+            // Handle SATELLITE B
+            const satBScale = 1.0 + (satBPos.z / config.satelliteB.radius) * 0.25;
+            satelliteBElement.setAttribute('transform', `translate(${satBPos.cx}, ${satBPos.cy}) rotate(${satBPos.rotation}) scale(${satBScale * 0.7})`);
+            if (satBPos.z < 0) {
+                if (satelliteBElement.parentNode !== behindLayer) behindLayer.appendChild(satelliteBElement);
+            } else {
+                if (satelliteBElement.parentNode !== frontLayer) frontLayer.appendChild(satelliteBElement);
+            }
+
+            // Handle SATELLITE C (Gundam)
+            const satCScale = 1.0 + (satCPos.z / config.satelliteC.radius) * 0.25;
+            satelliteCElement.setAttribute('transform', `translate(${satCPos.cx}, ${satCPos.cy}) rotate(${satCPos.rotation}) scale(${satCScale * 0.8})`);
+            if (satCPos.z < 0) {
+                if (satelliteCElement.parentNode !== behindLayer) behindLayer.appendChild(satelliteCElement);
+            } else {
+                if (satelliteCElement.parentNode !== frontLayer) frontLayer.appendChild(satelliteCElement);
+            }
+
+            // Handle COSMO Logo (Lock orientation, 5x larger proportions)
+            const cosmoScale = 1.0 + (cosmoPos.z / config.cosmo.radius) * 0.25;
+            const tiltDeg = config.cosmo.tilt * (180 / Math.PI);
+            cosmoElement.setAttribute('transform', `translate(${cosmoPos.cx}, ${cosmoPos.cy}) rotate(${tiltDeg}) scale(${cosmoScale * 0.85})`);
+            if (cosmoPos.z < 0) {
+                if (cosmoElement.parentNode !== behindLayer) behindLayer.appendChild(cosmoElement);
+            } else {
+                if (cosmoElement.parentNode !== frontLayer) frontLayer.appendChild(cosmoElement);
+            }
+
+            // Handle ROCKET
+            const rockScale = 1.0 + (rockPos.z / config.rocket.radius) * 0.25;
+            rocketElement.setAttribute('transform', `translate(${rockPos.cx}, ${rockPos.cy}) rotate(${rockPos.rotation}) scale(${rockScale * 0.65})`);
+            if (rockPos.z < 0) {
+                if (rocketElement.parentNode !== behindLayer) behindLayer.appendChild(rocketElement);
+            } else {
+                if (rocketElement.parentNode !== frontLayer) frontLayer.appendChild(rocketElement);
+            }
+
+            // Calculate FPS
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFrameTime >= 1000) {
+                fpsCounter.textContent = frameCount;
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+
+            requestAnimationFrame(animateOrbit);
+        }
+
+        function renderOrbitPlanes() {
+            backOrbitsGroup.innerHTML = '';
+            frontOrbitsGroup.innerHTML = '';
+
+            // Satellite A (Dashed Amber/Blue Ring)
+            createVisualOrbit(config.satellite.radius, config.satellite.tilt, '#fbbf24', '4,4', 1);
+            // Satellite B (Cyan Dash/Dot Ring)
+            createVisualOrbit(config.satelliteB.radius, config.satelliteB.tilt, '#06b6d4', '8,4,2,4', 1);
+            // Gundam C (Purple Glow Dash Ring)
+            createVisualOrbit(config.satelliteC.radius, config.satelliteC.tilt, '#a855f7', '6,3', 1);
+            // COSMO Logo (Equatorial Cyan Ring - Very Thin)
+            createVisualOrbit(config.cosmo.radius, config.cosmo.tilt, '#38bdf8', '12,6', 0.5);
+            // Rocket (Thin Crimson Ring)
+            createVisualOrbit(config.rocket.radius, config.rocket.tilt, '#f43f5e', 'none', 1);
+        }
+
+        function createVisualOrbit(radius, tiltRad, color, dasharray, strokeWidth) {
+            const rx = radius;
+            const ry = radius * Math.abs(Math.sin(tiltRad));
+
+            const pathNode = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            pathNode.setAttribute('cx', '250');
+            pathNode.setAttribute('cy', '250');
+            pathNode.setAttribute('rx', rx);
+            pathNode.setAttribute('ry', ry);
+            pathNode.setAttribute('fill', 'none');
+            pathNode.setAttribute('stroke', color);
+            pathNode.setAttribute('stroke-width', strokeWidth);
+            pathNode.setAttribute('stroke-dasharray', dasharray);
+            pathNode.setAttribute('opacity', '0.45');
+            
+            backOrbitsGroup.appendChild(pathNode);
+        }
+
+        // Wire up controls
+        document.getElementById('sliderEarthSize').addEventListener('input', (e) => {
+            const size = parseInt(e.target.value);
+            config.earth.radius = size;
+            earthBase.setAttribute('r', size);
+            earthClipCircle.setAttribute('r', size);
+            earthVal.textContent = size + 'px';
+            const shadowPath = document.querySelector('#earthGroup path');
+            shadowPath.setAttribute('d', `M 250 ${250-size} A ${size} ${size} 0 0 1 250 ${250+size} A ${size} ${size} 0 0 0 250 ${250-size} Z`);
+        });
+
+        document.getElementById('sliderEarthSpin').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) / 10;
+            config.earth.speed = val;
+            earthSpinVal.textContent = val.toFixed(2) + ' px/f';
+        });
+
+        document.getElementById('sliderSatRadius').addEventListener('input', (e) => {
+            config.satellite.radius = parseInt(e.target.value);
+        });
+        document.getElementById('sliderSatSpeed').addEventListener('input', (e) => {
+            config.satellite.speed = parseInt(e.target.value) * 0.002;
+        });
+        document.getElementById('sliderSatTilt').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            config.satellite.tilt = val * (Math.PI / 180);
+            satTiltVal.textContent = val + '°';
+        });
+
+        document.getElementById('sliderSatBRadius').addEventListener('input', (e) => {
+            config.satelliteB.radius = parseInt(e.target.value);
+        });
+        document.getElementById('sliderSatBSpeed').addEventListener('input', (e) => {
+            config.satelliteB.speed = parseInt(e.target.value) * 0.002;
+        });
+        document.getElementById('sliderSatBTilt').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            config.satelliteB.tilt = val * (Math.PI / 180);
+            satBTiltVal.textContent = val + '°';
+        });
+
+        document.getElementById('sliderGundRadius').addEventListener('input', (e) => {
+            config.satelliteC.radius = parseInt(e.target.value);
+        });
+        document.getElementById('sliderGundSpeed').addEventListener('input', (e) => {
+            config.satelliteC.speed = parseInt(e.target.value) * 0.002;
+        });
+        document.getElementById('sliderGundTilt').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            config.satelliteC.tilt = val * (Math.PI / 180);
+            gundTiltVal.textContent = val + '°';
+        });
+
+        document.getElementById('sliderCosmoRadius').addEventListener('input', (e) => {
+            config.cosmo.radius = parseInt(e.target.value);
+        });
+        document.getElementById('sliderCosmoSpeed').addEventListener('input', (e) => {
+            config.cosmo.speed = parseInt(e.target.value) * 0.0015; // Slow glide tuning
+        });
+        document.getElementById('sliderCosmoTilt').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            config.cosmo.tilt = val * (Math.PI / 180);
+            cosmoTiltVal.textContent = val + '°';
+        });
+
+        document.getElementById('sliderRockRadius').addEventListener('input', (e) => {
+            config.rocket.radius = parseInt(e.target.value);
+        });
+        document.getElementById('sliderRockSpeed').addEventListener('input', (e) => {
+            config.rocket.speed = parseInt(e.target.value) * 0.002;
+        });
+        document.getElementById('sliderRockTilt').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            config.rocket.tilt = val * (Math.PI / 180);
+            rockTiltVal.textContent = val + '°';
+        });
+
+        // Play/Pause Toggle
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        btnPlayPause.addEventListener('click', () => {
+            config.isPlaying = !config.isPlaying;
+            if (config.isPlaying) {
+                btnPlayPause.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    PAUSE SIMULATION
+                `;
+                document.getElementById('telemetryStatus').textContent = '5-AXIS QUAD-SPIN OK';
+                document.getElementById('telemetryStatus').className = 'text-emerald-400';
+            } else {
+                btnPlayPause.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+                    RESUME SIMULATION
+                `;
+                document.getElementById('telemetryStatus').textContent = 'ENGINE PAUSED';
+                document.getElementById('telemetryStatus').className = 'text-amber-400';
+            }
+        });
+
+        // Exports highly compatible pure SMIL standalone animated SVG
+        document.getElementById('btnDownload').addEventListener('click', () => {
+            // Read active tuning parameters
+            const earthR = config.earth.radius;
+            const earthSpeedVal = config.earth.speed;
+            
+            // Speed translation: compute duration based on step frequencies
+            const getDuration = (speed) => ((2 * Math.PI) / speed) / 60;
+            
+            const durA = getDuration(config.satellite.speed).toFixed(2);
+            const durB = getDuration(config.satelliteB.speed).toFixed(2);
+            const durC = getDuration(config.satelliteC.speed).toFixed(2);
+            const durCosmo = getDuration(config.cosmo.speed).toFixed(2);
+            const durRock = getDuration(config.rocket.speed).toFixed(2);
+            
+            // Projection factors (semi-minor axis)
+            const rxA = config.satellite.radius;
+            const ryA = Math.round(rxA * Math.abs(Math.sin(config.satellite.tilt)));
+            const tiltA = (config.satellite.tilt * (180 / Math.PI)).toFixed(1);
+
+            const rxB = config.satelliteB.radius;
+            const ryB = Math.round(rxB * Math.abs(Math.sin(config.satelliteB.tilt)));
+            const tiltB = (config.satelliteB.tilt * (180 / Math.PI)).toFixed(1);
+
+            const rxC = config.satelliteC.radius;
+            const ryC = Math.round(rxC * Math.abs(Math.sin(config.satelliteC.tilt)));
+            const tiltC = (config.satelliteC.tilt * (180 / Math.PI)).toFixed(1);
+
+            const rxCosmo = config.cosmo.radius;
+            const ryCosmo = Math.round(rxCosmo * Math.abs(Math.sin(config.cosmo.tilt)));
+            const tiltCosmo = (config.cosmo.tilt * (180 / Math.PI)).toFixed(1);
+
+            const rxRock = config.rocket.radius;
+            const ryRock = Math.round(rxRock * Math.abs(Math.sin(config.rocket.tilt)));
+            const tiltRock = (config.rocket.tilt * (180 / Math.PI)).toFixed(1);
+
+            const earthSpinDur = earthSpeedVal > 0 ? (400 / earthSpeedVal / 60).toFixed(2) : 0;
+            const cloudSpinDur = earthSpeedVal > 0 ? (400 / (earthSpeedVal * 1.35) / 60).toFixed(2) : 0;
+
+            const smilSvg = `
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <style>
+            text { font-family: 'Share Tech Mono', monospace, sans-serif; }
+        </style>
+
+        <!-- Background -->
+        <radialGradient id="spaceBg" cx="50%" cy="50%" r="75%">
+            <stop offset="0%" stop-color="#0c1326"/>
+            <stop offset="60%" stop-color="#050811"/>
+            <stop offset="100%" stop-color="#020306"/>
+        </radialGradient>
+        
+        <!-- Filters -->
+        <filter id="earthGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+
+        <!-- Gradients -->
+        <radialGradient id="earthGrad" cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stop-color="#3b82f6" />
+            <stop offset="50%" stop-color="#1d4ed8" />
+            <stop offset="85%" stop-color="#0f172a" />
+            <stop offset="100%" stop-color="#020617" />
+        </radialGradient>
+        <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fbbf24" />
+            <stop offset="100%" stop-color="#b45309" />
+        </linearGradient>
+        <linearGradient id="silverMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f1f5f9" />
+            <stop offset="100%" stop-color="#64748b" />
+        </linearGradient>
+
+        <!-- Globe Mask -->
+        <clipPath id="earthClip">
+            <circle cx="250" cy="250" r="${earthR}"/>
+        </clipPath>
+
+        <!-- Orbit Motion Paths -->
+        <path id="pathA" d="M -${rxA},0 A ${rxA},${ryA} 0 1,1 ${rxA},0 A ${rxA},${ryA} 0 1,1 -${rxA},0" />
+        <path id="pathB" d="M -${rxB},0 A ${rxB},${ryB} 0 1,1 ${rxB},0 A ${rxB},${ryB} 0 1,1 -${rxB},0" />
+        <path id="pathC" d="M -${rxC},0 A ${rxC},${ryC} 0 1,1 ${rxC},0 A ${rxC},${ryC} 0 1,1 -${rxC},0" />
+        <path id="pathCosmo" d="M -${rxCosmo},0 A ${rxCosmo},${ryCosmo} 0 1,1 ${rxCosmo},0 A ${rxCosmo},${ryCosmo} 0 1,1 -${rxCosmo},0" />
+        <path id="pathRock" d="M -${rxRock},0 A ${rxRock},${ryRock} 0 1,1 ${rxRock},0 A ${rxRock},${ryRock} 0 1,1 -${rxRock},0" />
+    </defs>
+
+    <!-- Deep Space Background -->
+    <rect width="500" height="500" fill="url(#spaceBg)"/>
+
+    <!-- Stars (Flickering stars in pure SMIL) -->
+    <g id="starfield">
+        ${Array.from({length: 45}, () => {
+            const cx = Math.floor(Math.random() * 500);
+            const cy = Math.floor(Math.random() * 500);
+            const r = (Math.random() * 1.5 + 0.5).toFixed(1);
+            const op = (Math.random() * 0.6 + 0.4).toFixed(2);
+            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff" opacity="${op}"><animate attributeName="opacity" values="${op};${op*0.2};${op}" dur="${(3 + Math.random()*5).toFixed(1)}s" repeatCount="indefinite"/></circle>`;
+        }).join('\\n')}
+    </g>
+
+    <!-- Orbit Planes (Behind Earth) -->
+    <g opacity="0.35">
+        <ellipse cx="250" cy="250" rx="${rxA}" ry="${ryA}" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4" transform="rotate(${tiltA} 250 250)" />
+        <ellipse cx="250" cy="250" rx="${rxB}" ry="${ryB}" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="8,4,2,4" transform="rotate(${tiltB} 250 250)" />
+        <ellipse cx="250" cy="250" rx="${rxC}" ry="${ryC}" fill="none" stroke="#a855f7" stroke-width="1" stroke-dasharray="6,3" transform="rotate(${tiltC} 250 250)" />
+        <ellipse cx="250" cy="250" rx="${rxCosmo}" ry="${ryCosmo}" fill="none" stroke="#38bdf8" stroke-width="0.5" stroke-dasharray="12,6" transform="rotate(${tiltCosmo} 250 250)" />
+        <ellipse cx="250" cy="250" rx="${rxRock}" ry="${ryRock}" fill="none" stroke="#f43f5e" stroke-width="1" transform="rotate(${tiltRock} 250 250)" />
+    </g>
+
+    <!-- Depth Layer 1: Behind Earth Actors -->
+    <g id="behindEarthLayer">
+        <!-- Satellite A (Behind) -->
+        <g transform="translate(250, 250) rotate(${tiltA})">
+            <g>
+                ${vectorTemplates.satA}
+                <animateMotion dur="${durA}s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="${durA}s" repeatCount="indefinite"/>
+            </g>
+        </g>
+        <!-- Satellite B (Behind) -->
+        <g transform="translate(250, 250) rotate(${tiltB})">
+            <g>
+                ${vectorTemplates.satB}
+                <animateMotion dur="${durB}s" repeatCount="indefinite" rotate="auto" begin="-${(durB/3).toFixed(2)}s"><mpath href="#pathB"/></animateMotion>
+                <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="${durB}s" repeatCount="indefinite" begin="-${(durB/3).toFixed(2)}s" />
+            </g>
+        </g>
+        <!-- Gundam Satellite C (Behind) -->
+        <g transform="translate(250, 250) rotate(${tiltC})">
+            <g>
+                ${vectorTemplates.satC}
+                <animateMotion dur="${durC}s" repeatCount="indefinite" rotate="auto" begin="-${(durC*1.2).toFixed(2)}s"><mpath href="#pathC"/></animateMotion>
+                <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="${durC}s" repeatCount="indefinite" begin="-${(durC*1.2).toFixed(2)}s" />
+            </g>
+        </g>
+        <!-- COSMO Rotating Logo (Behind) -->
+        <g transform="translate(250, 250) rotate(${tiltCosmo})">
+            <g>
+                ${vectorTemplates.cosmo}
+                <animateMotion dur="${durCosmo}s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="${durCosmo}s" repeatCount="indefinite" />
+            </g>
+        </g>
+        <!-- Rocket (Behind) -->
+        <g transform="translate(250, 250) rotate(${tiltRock})">
+            <g>
+                ${vectorTemplates.rocket}
+                <animateMotion dur="${durRock}s" repeatCount="indefinite" rotate="auto" begin="-${(durRock*0.7).toFixed(2)}s"><mpath href="#pathRock"/></animateMotion>
+                <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="${durRock}s" repeatCount="indefinite" begin="-${(durRock*0.7).toFixed(2)}s" />
+            </g>
+        </g>
+    </g>
+
+    <!-- Earth Centerpiece -->
+    <g id="earthGroup" filter="url(#earthGlow)">
+        <circle cx="250" cy="250" r="${earthR}" fill="url(#earthGrad)"/>
+        
+        <g clip-path="url(#earthClip)">
+            <!-- Continuous scrolling continent layer (Zero JS) -->
+            <g opacity="0.95">
+                <g id="continentsWrap">
+                    <g>
+                        <!-- North America -->
+                        <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                        <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                        <!-- South America -->
+                        <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                        <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                        <!-- Europe & Asia -->
+                        <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                        <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                        <!-- Africa -->
+                        <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                        <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                        <!-- Australia -->
+                        <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                        <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                    </g>
+                    <g transform="translate(400, 0)">
+                        <!-- North America -->
+                        <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                        <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                        <!-- South America -->
+                        <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                        <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                        <!-- Europe & Asia -->
+                        <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                        <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                        <!-- Africa -->
+                        <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                        <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                        <!-- Australia -->
+                        <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                        <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                    </g>
+                </g>
+                ${earthSpinDur > 0 ? `<animateTransform href="#continentsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="${earthSpinDur}s" repeatCount="indefinite"/>` : ''}
+            </g>
+
+            <!-- Translucent Swirling Cloud Atmosphere with Parallax scroll -->
+            <g opacity="0.4">
+                <g id="cloudsWrap">
+                    <g>
+                        <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                        <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                        <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                    </g>
+                    <g transform="translate(400, 0)">
+                        <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                        <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                        <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                    </g>
+                </g>
+                ${cloudSpinDur > 0 ? `<animateTransform href="#cloudsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="${cloudSpinDur}s" repeatCount="indefinite"/>` : ''}
+            </g>
+        </g>
+        
+        <path d="M 250 ${250-earthR} A ${earthR} ${earthR} 0 0 1 250 ${250+earthR} A ${earthR} ${earthR} 0 0 0 250 ${250-earthR} Z" fill="#020617" opacity="0.6"/>
+    </g>
+
+    <!-- Depth Layer 2: In-Front Earth Actors -->
+    <g id="inFrontEarthLayer">
+        <!-- Satellite A (Front) -->
+        <g transform="translate(250, 250) rotate(${tiltA})">
+            <g>
+                ${vectorTemplates.satA}
+                <animateMotion dur="${durA}s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="${durA}s" repeatCount="indefinite"/>
+            </g>
+        </g>
+        <!-- Satellite B (Front) -->
+        <g transform="translate(250, 250) rotate(${tiltB})">
+            <g>
+                ${vectorTemplates.satB}
+                <animateMotion dur="${durB}s" repeatCount="indefinite" rotate="auto" begin="-${(durB/3).toFixed(2)}s"><mpath href="#pathB"/></animateMotion>
+                <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="${durB}s" repeatCount="indefinite" begin="-${(durB/3).toFixed(2)}s" />
+            </g>
+        </g>
+        <!-- Gundam Satellite C (Front) -->
+        <g transform="translate(250, 250) rotate(${tiltC})">
+            <g>
+                ${vectorTemplates.satC}
+                <animateMotion dur="${durC}s" repeatCount="indefinite" rotate="auto" begin="-${(durC*1.2).toFixed(2)}s"><mpath href="#pathC"/></animateMotion>
+                <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="${durC}s" repeatCount="indefinite" begin="-${(durC*1.2).toFixed(2)}s" />
+            </g>
+        </g>
+        <!-- COSMO Rotating Logo (Front) -->
+        <g transform="translate(250, 250) rotate(${tiltCosmo})">
+            <g>
+                ${vectorTemplates.cosmo}
+                <animateMotion dur="${durCosmo}s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="${durCosmo}s" repeatCount="indefinite" />
+            </g>
+        </g>
+        <!-- Rocket (Front) -->
+        <g transform="translate(250, 250) rotate(${tiltRock})">
+            <g>
+                ${vectorTemplates.rocket}
+                <animateMotion dur="${durRock}s" repeatCount="indefinite" rotate="auto" begin="-${(durRock*0.7).toFixed(2)}s"><mpath href="#pathRock"/></animateMotion>
+                <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="${durRock}s" repeatCount="indefinite" begin="-${(durRock*0.7).toFixed(2)}s" />
+            </g>
+        </g>
+    </g>
+</svg>
+`;
+            
+            // Build virtual download trigger
+            const blob = new Blob([smilSvg], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+            downloadLink.href = url;
+            downloadLink.download = "Gempick_PureSMIL_COSMO_Universe.svg";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+        });
+
+        // Initialize animation loop
+        window.onload = function() {
+            animateOrbit();
+        }
+    </script>
+</body>
+</html>

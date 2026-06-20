@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宇宙を学ぶ 衛星・ロケット シミュレータ COSMO v.2026(v.28) (Stabilized Twilight Edition)</title>
+<style>
+  body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
+  
+  #labels { 
+    position: static; text-align: left; font-size: 14px; line-height: 1.6; color: #00ffcc; 
+    background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.3);
+    padding: 10px; border-radius: 6px; margin-bottom: 15px; display: inline-block;
+  }
+  
+  #timeBox { position: absolute; top: 10px; right: 10px; font-size: 16px; color:#00ffcc; text-align: right; }
+  #audioBtn {
+    margin-top: 5px; background: #220000; color: #ff3333; border: 1px solid #ff3333;
+    padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+  }
+  #audioBtn.on { background: #002211; color: #00ffcc; border: 1px solid #00ffcc; box-shadow: 0 0 8px rgba(0,255,204,0.4); }
+
+  #controlRoomContainer { display: flex; justify-content: center; align-items: flex-start; gap: 25px; max-width: 1100px; margin: 0 auto; }
+  #leftOperationalPanel { flex: 0 0 600px; text-align: center; }
+  #rightDataPanel { flex: 0 0 400px; display: flex; flex-direction: column; gap: 15px; text-align: left; }
+  canvas { background:#000; border: 1px solid #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2); max-width: 100%; height: auto; }
+  
+  #sliderBox, #presetBox, #launchBox { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
+  #sliderBox { margin-top: 15px; background: rgba(0, 255, 204, 0.05); padding: 15px; border-radius: 8px; display: block; border: 1px solid #00ffcc; text-align: left; }
+  .slider-row { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-row label { width: 90px; color: #00ffcc; font-weight: bold; font-size: 14px; }
+  .slider-row input[type=range] { flex: 1; margin: 0 15px; cursor: pointer; }
+  .slider-val { width: 80px; text-align: right; font-weight: bold; color: #fff; font-size: 14px; }
+
+  #hudBox { background: rgba(0, 10, 20, 0.85); padding: 15px; border-radius: 6px; border: 1px solid #00ffcc; color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); font-size: 13px; line-height: 1.6; }
+  .hud-title { font-size: 14px; font-weight: bold; border-bottom: 1px solid #00ffcc; margin-bottom: 8px; color: #fff; letter-spacing: 1px; }
+  .hud-val { color: #fff; font-weight: bold; }
+
+  #mapBox { text-align: left; }
+  .map-label { color: #00ffcc; font-size: 12px; margin-bottom: 5px; letter-spacing: 1px; font-weight: bold; }
+
+  #presetBox { background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #00ffcc; }
+  #presetSelect { background: #000; color: #00ffff; border: 1px solid #00ffff; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
+
+  #launchBox { background: rgba(255, 204, 0, 0.08); padding: 10px; border-radius: 6px; border: 1px solid #ffcc00; display: flex; flex-direction: column; gap: 8px; }
+  #launchSelect { background: #000; color: #ffcc00; border: 1px solid #ffcc00; padding: 6px; font-weight: bold; width: 100%; cursor: pointer; }
+  
+  #guidanceBox {
+    background: rgba(0, 255, 204, 0.04);
+    padding: 15px; border-radius: 8px; border: 1px dashed #00ffcc; color: #fff; font-size: 13px; line-height: 1.6; text-align: left;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.15); min-height: 85px; 
+  }
+  .guidance-title {
+    font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 6px; border-bottom: 1px solid rgba(0, 255, 204, 0.25); padding-bottom: 4px; letter-spacing: 0.5px;
+  }
+  
+  #launchBtn {
+    background: #442200; color: #ff9900; border: 1px solid #ff9900; padding: 8px;
+    font-weight: bold; font-size: 14px; border-radius: 4px; cursor: not-allowed; opacity: 0.5;
+    transition: all 0.3s ease; letter-spacing: 1px;
+  }
+  #launchBtn.ready {
+    background: #221100; color: #ffcc00; border: 1px solid #ffcc00; cursor: pointer; opacity: 1;
+    animation: pulseGlow 2s infinite;
+  }
+  #launchBtn.ready:hover { background: #ffaa00; color: #000; box-shadow: 0 0 12px #ffaa00; }
+  #launchBtn.launching { background: #440000; color: #ff3333; border: 1px solid #ff3333; cursor: not-allowed; animation: dangerBlink 0.5s infinite; }
+
+  @media (max-width: 1024px) {
+    #controlRoomContainer { display: flex; flex-direction: column; align-items: center; }
+    #leftOperationalPanel, #rightDataPanel { display: contents; }
+    #presetBox { order: 1; width: 100%; margin-top: 10px; margin-bottom: 5px; }   
+    #sliderBox { order: 2; width: 100%; margin-bottom: 10px; }                     
+    #canvas    { order: 3; }                                                 
+    #mapBox    { order: 4; width: 100%; margin-top: 15px; }                   
+    #launchBox { order: 5; width: 100%; margin-top: 5px; margin-bottom: 5px; }
+    #guidanceBox { order: 6; width: 100%; margin-top: 5px; margin-bottom: 10px; }
+    #hudBox    { order: 7; width: 100%; }                                     
+    #timeBox { position: static; text-align: center; margin-bottom: 15px; }
+  }
+</style>
+</head>
+<body onclick="autoEnableAudio()">
+
+
+
+<!--タイトルとシンボルマーク -->
+
+<style>
+  /* タイトルとボタンを綺麗に横並びにするコンテナ */
+  .cosmo-header-container {
+    max-width: 1100px;
+    margin: 10px auto 15px auto;
+    display: flex;
+    align-items: center;     /* 縦方向を中央揃えにして高さを揃える */
+    justify-content: center; /* 画面中央に配置 */
+    gap: 12px;               /* ボタンとタイトルの間の程よい隙間 */
+  }
+
+  .cosmo-symbol-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 204, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    /* シンボルボタンの大きさ調整　ひとまず仮で28pxに設定（14px〜45pxなど自由に変更可能） */
+    width: 80px;       
+    height: 80px;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+    flex-shrink: 0;          /* 画面が狭くなってもボタンが潰れないように固定 */
+  }
+  
+  /* ホバー時にワインレッドの情熱が湧き上がるネオン演出 */
+  .cosmo-symbol-btn:hover {
+    transform: scale(1.05);
+    border-color: #ff3366; 
+    box-shadow: 0 0 12px rgba(255, 51, 102, 0.7);
+  }
+  
+  .cosmo-symbol-btn svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* 既存のタイトルスタイルを継承しつつ、余白をコンテナ側で制御 */
+  #mainTitle {
+    color: #00ffcc; 
+    text-shadow: 0 0 10px #00ffcc; 
+    font-size: 22px; 
+    margin: 0; /* フレックス内でずれないように余白をゼロにリセット */
+    padding: 0;
+  }
+</style>
+
+<div class="cosmo-header-container">
+  <button class="cosmo-symbol-btn" onclick="toggleAudioViaCosmoSymbol(event)" title="COSMO コア認証 / AUDIO TOGGLE">
+    <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+            <style>
+                text { font-family: 'Share Tech Mono', monospace, sans-serif; }
+            </style>
+            <radialGradient id="spaceBg" cx="50%" cy="50%" r="75%">
+                <stop offset="0%" stop-color="#0c1326"/>
+                <stop offset="60%" stop-color="#050811"/>
+                <stop offset="100%" stop-color="#020306"/>
+            </radialGradient>
+            <filter id="earthGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="12" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+            <radialGradient id="earthGrad" cx="35%" cy="30%" r="65%">
+                <stop offset="0%" stop-color="#3b82f6" />
+                <stop offset="50%" stop-color="#1d4ed8" />
+                <stop offset="85%" stop-color="#0f172a" />
+                <stop offset="100%" stop-color="#020617" />
+            </radialGradient>
+            <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fbbf24" />
+                <stop offset="100%" stop-color="#b45309" />
+            </linearGradient>
+            <linearGradient id="silverMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f1f5f9" />
+                <stop offset="100%" stop-color="#64748b" />
+            </linearGradient>
+            <clipPath id="earthClip">
+                <circle cx="250" cy="250" r="124"/>
+            </clipPath>
+            <path id="pathA" d="M -115,0 A 115,71 0 1,1 115,0 A 115,71 0 1,1 -115,0" />
+            <path id="pathB" d="M -175,0 A 175,100 0 1,1 175,0 A 175,100 0 1,1 -175,0" />
+            <path id="pathC" d="M -150,0 A 150,70 0 1,1 150,0 A 150,70 0 1,1 -150,0" />
+            <path id="pathCosmo" d="M -165,0 A 165,0 0 1,1 165,0 A 165,0 0 1,1 -165,0" />
+            <path id="pathRock" d="M -200,0 A 200,35 0 1,1 200,0 A 200,35 0 1,1 -200,0" />
+        </defs>
+        <rect width="500" height="500" fill="url(#spaceBg)"/>
+        <g id="starfield">
+            <circle cx="490" cy="499" r="1.8" fill="#ffffff" opacity="0.72"><animate attributeName="opacity" values="0.72;0.144;0.72" dur="6.9s" repeatCount="indefinite"/></circle>
+            <circle cx="331" cy="278" r="1.2" fill="#ffffff" opacity="0.41"><animate attributeName="opacity" values="0.41;0.082;0.41" dur="5.6s" repeatCount="indefinite"/></circle>
+            <circle cx="272" cy="405" r="0.7" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="4.5s" repeatCount="indefinite"/></circle>
+            <circle cx="164" cy="140" r="1.7" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="3.6s" repeatCount="indefinite"/></circle>
+            <circle cx="402" cy="345" r="1.8" fill="#ffffff" opacity="0.60"><animate attributeName="opacity" values="0.60;0.12;0.60" dur="3.7s" repeatCount="indefinite"/></circle>
+            <circle cx="390" cy="261" r="0.9" fill="#ffffff" opacity="0.94"><animate attributeName="opacity" values="0.94;0.188;0.94" dur="6.7s" repeatCount="indefinite"/></circle>
+            <circle cx="99" cy="49" r="1.3" fill="#ffffff" opacity="0.93"><animate attributeName="opacity" values="0.93;0.18600000000000003;0.93" dur="4.4s" repeatCount="indefinite"/></circle>
+            <circle cx="389" cy="393" r="1.8" fill="#ffffff" opacity="0.74"><animate attributeName="opacity" values="0.74;0.148;0.74" dur="4.6s" repeatCount="indefinite"/></circle>
+            <circle cx="214" cy="322" r="1.9" fill="#ffffff" opacity="1.00"><animate attributeName="opacity" values="1.00;0.2;1.00" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="387" cy="133" r="1.5" fill="#ffffff" opacity="0.95"><animate attributeName="opacity" values="0.95;0.19;0.95" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="313" cy="199" r="0.8" fill="#ffffff" opacity="0.89"><animate attributeName="opacity" values="0.89;0.17800000000000002;0.89" dur="7.3s" repeatCount="indefinite"/></circle>
+            <circle cx="176" cy="345" r="1.6" fill="#ffffff" opacity="0.85"><animate attributeName="opacity" values="0.85;0.17;0.85" dur="7.4s" repeatCount="indefinite"/></circle>
+            <circle cx="232" cy="439" r="0.6" fill="#ffffff" opacity="0.45"><animate attributeName="opacity" values="0.45;0.09000000000000001;0.45" dur="4.5s" repeatCount="indefinite"/></circle>
+            <circle cx="295" cy="196" r="0.8" fill="#ffffff" opacity="0.68"><animate attributeName="opacity" values="0.68;0.136;0.68" dur="5.5s" repeatCount="indefinite"/></circle>
+            <circle cx="261" cy="420" r="1.1" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="5.4s" repeatCount="indefinite"/></circle>
+            <circle cx="128" cy="446" r="0.6" fill="#ffffff" opacity="0.87"><animate attributeName="opacity" values="0.87;0.17400000000000002;0.87" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="302" cy="62" r="1.8" fill="#ffffff" opacity="0.77"><animate attributeName="opacity" values="0.77;0.15400000000000003;0.77" dur="6.1s" repeatCount="indefinite"/></circle>
+            <circle cx="194" cy="259" r="1.1" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="4.4s" repeatCount="indefinite"/></circle>
+            <circle cx="109" cy="299" r="1.9" fill="#ffffff" opacity="0.57"><animate attributeName="opacity" values="0.57;0.11399999999999999;0.57" dur="7.5s" repeatCount="indefinite"/></circle>
+            <circle cx="224" cy="239" r="0.7" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="7.8s" repeatCount="indefinite"/></circle>
+            <circle cx="447" cy="409" r="1.1" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="6.4s" repeatCount="indefinite"/></circle>
+            <circle cx="484" cy="333" r="0.8" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="7.6s" repeatCount="indefinite"/></circle>
+            <circle cx="54" cy="101" r="0.5" fill="#ffffff" opacity="0.93"><animate attributeName="opacity" values="0.93;0.18600000000000003;0.93" dur="3.2s" repeatCount="indefinite"/></circle>
+            <circle cx="350" cy="143" r="0.8" fill="#ffffff" opacity="0.69"><animate attributeName="opacity" values="0.69;0.13799999999999998;0.69" dur="6.3s" repeatCount="indefinite"/></circle>
+            <circle cx="262" cy="29" r="1.6" fill="#ffffff" opacity="0.63"><animate attributeName="opacity" values="0.63;0.126;0.63" dur="4.3s" repeatCount="indefinite"/></circle>
+            <circle cx="114" cy="391" r="1.2" fill="#ffffff" opacity="0.73"><animate attributeName="opacity" values="0.73;0.146;0.73" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="304" cy="63" r="1.8" fill="#ffffff" opacity="0.99"><animate attributeName="opacity" values="0.99;0.198;0.99" dur="3.9s" repeatCount="indefinite"/></circle>
+            <circle cx="199" cy="280" r="2.0" fill="#ffffff" opacity="0.56"><animate attributeName="opacity" values="0.56;0.11200000000000002;0.56" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="346" cy="323" r="1.6" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="6.5s" repeatCount="indefinite"/></circle>
+            <circle cx="328" cy="114" r="1.9" fill="#ffffff" opacity="0.55"><animate attributeName="opacity" values="0.55;0.11000000000000001;0.55" dur="3.8s" repeatCount="indefinite"/></circle>
+            <circle cx="218" cy="251" r="0.8" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="7.6s" repeatCount="indefinite"/></circle>
+            <circle cx="82" cy="182" r="1.4" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="5.7s" repeatCount="indefinite"/></circle>
+            <circle cx="414" cy="221" r="0.5" fill="#ffffff" opacity="0.74"><animate attributeName="opacity" values="0.74;0.148;0.74" dur="7.3s" repeatCount="indefinite"/></circle>
+            <circle cx="322" cy="426" r="1.4" fill="#ffffff" opacity="0.80"><animate attributeName="opacity" values="0.80;0.16000000000000003;0.80" dur="4.2s" repeatCount="indefinite"/></circle>
+            <circle cx="388" cy="322" r="1.5" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="8.0s" repeatCount="indefinite"/></circle>
+            <circle cx="284" cy="407" r="1.1" fill="#ffffff" opacity="0.75"><animate attributeName="opacity" values="0.75;0.15000000000000002;0.75" dur="6.8s" repeatCount="indefinite"/></circle>
+            <circle cx="44" cy="275" r="0.7" fill="#ffffff" opacity="0.48"><animate attributeName="opacity" values="0.48;0.096;0.48" dur="5.7s" repeatCount="indefinite"/></circle>
+            <circle cx="88" cy="415" r="1.9" fill="#ffffff" opacity="0.55"><animate attributeName="opacity" values="0.55;0.11000000000000001;0.55" dur="5.9s" repeatCount="indefinite"/></circle>
+            <circle cx="292" cy="247" r="1.2" fill="#ffffff" opacity="0.83"><animate attributeName="opacity" values="0.83;0.166;0.83" dur="6.4s" repeatCount="indefinite"/></circle>
+            <circle cx="46" cy="455" r="0.7" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="381" cy="243" r="1.9" fill="#ffffff" opacity="0.65"><animate attributeName="opacity" values="0.65;0.13;0.65" dur="5.9s" repeatCount="indefinite"/></circle>
+            <circle cx="228" cy="161" r="0.7" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="3.3s" repeatCount="indefinite"/></circle>
+            <circle cx="136" cy="400" r="0.8" fill="#ffffff" opacity="0.43"><animate attributeName="opacity" values="0.43;0.08600000000000001;0.43" dur="4.1s" repeatCount="indefinite"/></circle>
+            <circle cx="405" cy="339" r="1.8" fill="#ffffff" opacity="0.50"><animate attributeName="opacity" values="0.50;0.1;0.50" dur="6.3s" repeatCount="indefinite"/></circle>
+            <circle cx="174" cy="247" r="1.6" fill="#ffffff" opacity="0.52"><animate attributeName="opacity" values="0.52;0.10400000000000001;0.52" dur="3.5s" repeatCount="indefinite"/></circle>
+        </g>
+        <g opacity="0.35">
+            <ellipse cx="250" cy="250" rx="115" ry="71" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4" transform="rotate(38.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="175" ry="100" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="8,4,2,4" transform="rotate(-35.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="150" ry="70" fill="none" stroke="#a855f7" stroke-width="1" stroke-dasharray="6,3" transform="rotate(-28.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="165" ry="0" fill="none" stroke="#38bdf8" stroke-width="0.5" stroke-dasharray="12,6" transform="rotate(0.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="200" ry="35" fill="none" stroke="#f43f5e" stroke-width="1" transform="rotate(-10.0 250 250)" />
+        </g>
+        <g id="behindEarthLayer">
+            <g transform="translate(250, 250) rotate(38.0)">
+                <g>
+                    <circle cx="-14" cy="0" r="4" fill="#3b82f6" filter="url(#neonGlow)" opacity="0.8">
+                        <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite" />
+                    </circle>
+                    <rect x="-8" y="-6" width="16" height="12" rx="2" fill="url(#goldFoil)" stroke="#78350f" stroke-width="1" />
+                    <rect x="-6" y="-18" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="-6" x2="0" y2="-12" stroke="#475569" stroke-width="1.5" />
+                    <rect x="-6" y="12" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="6" x2="0" y2="12" stroke="#475569" stroke-width="1.5" />
+                    <circle cx="0" cy="0" r="2.5" fill="#f8fafc" />
+                    <animateMotion dur="6.54s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="6.54s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-35.0)">
+                <g>
+                    <circle cx="-16" cy="0" r="5" fill="#06b6d4" filter="url(#neonGlow)" opacity="0.9">
+                        <animate attributeName="r" values="3;6;3" dur="0.12s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="-2" cy="0" r="7" fill="url(#silverMetal)" stroke="#475569" stroke-width="1" />
+                    <path d="M 8,-9 Q 15,0 8,9" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <line x1="11" y1="0" x2="18" y2="0" stroke="#f43f5e" stroke-width="1" />
+                    <circle cx="18" cy="0" r="1.5" fill="#f43f5e" />
+                    <polygon points="-8,-4 -20,-14 -14,-16 -4,-4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <polygon points="-8,4 -20,14 -14,16 -4,4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <animateMotion dur="10.47s" repeatCount="indefinite" rotate="auto" begin="-3.49s"><mpath href="#pathB"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="10.47s" repeatCount="indefinite" begin="-3.49s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-28.0)">
+                <g>
+                    <polygon points="-16,-4 -30,0 -16,4" fill="#38bdf8" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-16,-4 -30,0 -16,4; -16,-3 -36,0 -16,3; -16,-4 -30,0 -16,4" dur="0.12s" repeatCount="indefinite"/>
+                    </polygon>
+                    <polygon points="-12,-10 -24,-12 -14,-7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <polygon points="-12,10 -24,12 -14,7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <path d="M -14,-12 L -6,-6 L -6,6 L -14,12 Z" fill="#475569" stroke="#334155" stroke-width="1" />
+                    <path d="M -12,-16 L -2,-6 L -2,6 L -12,16 Z" fill="#1e293b" stroke="#334155" stroke-width="1" />
+                    <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#1d4ed8" stroke="#1e40af" stroke-width="1" />
+                    <rect x="-3" y="-5" width="6" height="3" fill="#eab308" />
+                    <rect x="-4" y="2" width="8" height="4" fill="#ef4444" />
+                    <rect x="-5" y="-1" width="10" height="3" fill="#f8fafc" />
+                    <path d="M -2,-6 L 4,-6 L 2,-13 L -4,-13 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5" />
+                    <path d="M 2,-13 L 8,-18 L 1,-15 L -6,-18 L -1,-13 Z" fill="#f59e0b" />
+                    <polygon points="3,-6 5,-6 4,-4" fill="#ef4444" />
+                    <circle cx="2" cy="-9" r="1.2" fill="#22c55e" filter="url(#neonGlow)" />
+                    <path d="M -2,4 L 6,4 L 8,8 L 2,8 Z" fill="#f8fafc" />
+                    <rect x="4" y="3" width="12" height="3" rx="1" fill="#475569" />
+                    <line x1="16" y1="4.5" x2="26" y2="4.5" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+                    <path d="M -2,-4 L 4,-4 L 6,-8 L 0,-8 Z" fill="#f8fafc" />
+                    <g transform="translate(1, -9) rotate(-15)">
+                        <path d="M -6,-3 L 6,-3 L 4,8 L -4,8 Z" fill="#ef4444" stroke="#f8fafc" stroke-width="1" />
+                        <polygon points="0,-1 1,2 4,2 1,4 2,7 0,5 -2,7 -1,4 -4,2 -1,2" fill="#eab308" />
+                    </g>
+                    <animateMotion dur="13.09s" repeatCount="indefinite" rotate="auto" begin="-15.71s"><mpath href="#pathC"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="13.09s" repeatCount="indefinite" begin="-15.71s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(0.0)">
+                <g>
+                    <g filter="url(#neonGlow)">
+                        <text x="0" y="24" font-family="'Share Tech Mono', monospace, sans-serif" font-size="75" font-weight="900" fill="#38bdf8" stroke="#1e40af" stroke-width="5" paint-order="stroke fill" text-anchor="middle" letter-spacing="1">COSMO</text>
+                    </g>
+                    <animateMotion dur="17.45s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="17.45s" repeatCount="indefinite" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-10.0)">
+                <g>
+                    <polygon points="-24,0 -12,-6 -12,6" fill="#f97316" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-24,0 -12,-6 -12,6; -28,0 -12,-5 -12,5; -24,0 -12,-6 -12,6" dur="0.15s" repeatCount="indefinite"/>
+                    </polygon>
+                    <path d="M 14,0 L -12,-8 L -12,8 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+                    <path d="M -12,-8 L -18,-14 L -8,-8 Z" fill="#ef4444" />
+                    <path d="M -12,8 L -18,14 L -8,8 Z" fill="#ef4444" />
+                    <circle cx="4" cy="0" r="3" fill="#38bdf8" stroke="#1e3a8a" stroke-width="0.5" />
+                    <animateMotion dur="7.48s" repeatCount="indefinite" rotate="auto" begin="-5.24s"><mpath href="#pathRock"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="7.48s" repeatCount="indefinite" begin="-5.24s" />
+                </g>
+            </g>
+        </g>
+        <g id="earthGroup" filter="url(#earthGlow)">
+            <circle cx="250" cy="250" r="124" fill="url(#earthGrad)"/>
+            <g clip-path="url(#earthClip)">
+                <g opacity="0.95">
+                    <g id="continentsWrap">
+                        <g>
+                            <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                            <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                            <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                            <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                            <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                            <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                            <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                            <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                            <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                            <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                        </g>
+                        <g transform="translate(400, 0)">
+                            <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                            <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                            <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                            <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                            <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                            <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                            <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                            <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                            <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                            <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                        </g>
+                    </g>
+                    <animateTransform href="#continentsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="33.33s" repeatCount="indefinite"/>
+                </g>
+                <g opacity="0.4">
+                    <g id="cloudsWrap">
+                        <g>
+                            <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                            <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                            <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                        </g>
+                        <g transform="translate(400, 0)">
+                            <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                            <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                            <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                        </g>
+                    </g>
+                    <animateTransform href="#cloudsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="24.69s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <path d="M 250 126 A 124 124 0 0 1 250 374 A 124 124 0 0 0 250 126 Z" fill="#020617" opacity="0.6"/>
+        </g>
+        <g id="inFrontEarthLayer">
+            <g transform="translate(250, 250) rotate(38.0)">
+                <g>
+                    <circle cx="-14" cy="0" r="4" fill="#3b82f6" filter="url(#neonGlow)" opacity="0.8">
+                        <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite" />
+                    </circle>
+                    <rect x="-8" y="-6" width="16" height="12" rx="2" fill="url(#goldFoil)" stroke="#78350f" stroke-width="1" />
+                    <rect x="-6" y="-18" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="-6" x2="0" y2="-12" stroke="#475569" stroke-width="1.5" />
+                    <rect x="-6" y="12" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="6" x2="0" y2="12" stroke="#475569" stroke-width="1.5" />
+                    <circle cx="0" cy="0" r="2.5" fill="#f8fafc" />
+                    <animateMotion dur="6.54s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="6.54s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-35.0)">
+                <g>
+                    <circle cx="-16" cy="0" r="5" fill="#06b6d4" filter="url(#neonGlow)" opacity="0.9">
+                        <animate attributeName="r" values="3;6;3" dur="0.12s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="-2" cy="0" r="7" fill="url(#silverMetal)" stroke="#475569" stroke-width="1" />
+                    <path d="M 8,-9 Q 15,0 8,9" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <line x1="11" y1="0" x2="18" y2="0" stroke="#f43f5e" stroke-width="1" />
+                    <circle cx="18" cy="0" r="1.5" fill="#f43f5e" />
+                    <polygon points="-8,-4 -20,-14 -14,-16 -4,-4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <polygon points="-8,4 -20,14 -14,16 -4,4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <animateMotion dur="10.47s" repeatCount="indefinite" rotate="auto" begin="-3.49s"><mpath href="#pathB"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="10.47s" repeatCount="indefinite" begin="-3.49s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-28.0)">
+                <g>
+                    <polygon points="-16,-4 -30,0 -16,4" fill="#38bdf8" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-16,-4 -30,0 -16,4; -16,-3 -36,0 -16,3; -16,-4 -30,0 -16,4" dur="0.12s" repeatCount="indefinite"/>
+                    </polygon>
+                    <polygon points="-12,-10 -24,-12 -14,-7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <polygon points="-12,10 -24,12 -14,7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <path d="M -14,-12 L -6,-6 L -6,6 L -14,12 Z" fill="#475569" stroke="#334155" stroke-width="1" />
+                    <path d="M -12,-16 L -2,-6 L -2,6 L -12,16 Z" fill="#1e293b" stroke="#334155" stroke-width="1" />
+                    <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#1d4ed8" stroke="#1e40af" stroke-width="1" />
+                    <rect x="-3" y="-5" width="6" height="3" fill="#eab308" />
+                    <rect x="-4" y="2" width="8" height="4" fill="#ef4444" />
+                    <rect x="-5" y="-1" width="10" height="3" fill="#f8fafc" />
+                    <path d="M -2,-6 L 4,-6 L 2,-13 L -4,-13 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5" />
+                    <path d="M 2,-13 L 8,-18 L 1,-15 L -6,-18 L -1,-13 Z" fill="#f59e0b" />
+                    <polygon points="3,-6 5,-6 4,-4" fill="#ef4444" />
+                    <circle cx="2" cy="-9" r="1.2" fill="#22c55e" filter="url(#neonGlow)" />
+                    <path d="M -2,4 L 6,4 L 8,8 L 2,8 Z" fill="#f8fafc" />
+                    <rect x="4" y="3" width="12" height="3" rx="1" fill="#475569" />
+                    <line x1="16" y1="4.5" x2="26" y2="4.5" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+                    <path d="M -2,-4 L 4,-4 L 6,-8 L 0,-8 Z" fill="#f8fafc" />
+                    <g transform="translate(1, -9) rotate(-15)">
+                        <path d="M -6,-3 L 6,-3 L 4,8 L -4,8 Z" fill="#ef4444" stroke="#f8fafc" stroke-width="1" />
+                        <polygon points="0,-1 1,2 4,2 1,4 2,7 0,5 -2,7 -1,4 -4,2 -1,2" fill="#eab308" />
+                    </g>
+                    <animateMotion dur="13.09s" repeatCount="indefinite" rotate="auto" begin="-15.71s"><mpath href="#pathC"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="13.09s" repeatCount="indefinite" begin="-15.71s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(0.0)">
+                <g>
+                    <g filter="url(#neonGlow)">
+                        <text x="0" y="24" font-family="'Share Tech Mono', monospace, sans-serif" font-size="75" font-weight="900" fill="#38bdf8" stroke="#1e40af" stroke-width="5" paint-order="stroke fill" text-anchor="middle" letter-spacing="1">COSMO</text>
+                    </g>
+                    <animateMotion dur="17.45s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="17.45s" repeatCount="indefinite" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-10.0)">
+                <g>
+                    <polygon points="-24,0 -12,-6 -12,6" fill="#f97316" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-24,0 -12,-6 -12,6; -28,0 -12,-5 -12,5; -24,0 -12,-6 -12,6" dur="0.15s" repeatCount="indefinite"/>
+                    </polygon>
+                    <path d="M 14,0 L -12,-8 L -12,8 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+                    <path d="M -12,-8 L -18,-14 L -8,-8 Z" fill="#ef4444" />
+                    <path d="M -12,8 L -18,14 L -8,8 Z" fill="#ef4444" />
+                    <circle cx="4" cy="0" r="3" fill="#38bdf8" stroke="#1e3a8a" stroke-width="0.5" />
+                    <animateMotion dur="7.48s" repeatCount="indefinite" rotate="auto" begin="-5.24s"><mpath href="#pathRock"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="7.48s" repeatCount="indefinite" begin="-5.24s" />
+                </g>
+            </g>
+        </g>
+    </svg>
+  </button>
+  
+  <h2 id="mainTitle">宇宙を学ぶ 衛星・ロケット シミュレータ【COSMO】 v.2026 </h2>
+</div>
+
+<script>
+  /* シンボルマークを押したときのオーディオON/OFF切り替え関数 */
+  function toggleAudioViaCosmoSymbol(event) {
+    if (event) event.stopPropagation();
+    
+    // 1. まず本体の音声ON/OFF状態を判定する
+    const audioBtn = document.getElementById("audioBtn");
+    const isCurrentlyOn = audioBtn && audioBtn.textContent.includes("ON");
+    
+    // 2. 状態を反転させる（ONならOFFへ、OFFならONへ）
+    if (isCurrentlyOn) {
+      if (audioCtx) audioCtx.suspend();
+      audioEnabled = false;
+      if (audioBtn) {
+        audioBtn.textContent = "🔇 AUDIO: OFF";
+        audioBtn.className = "";
+      }
+    } else {
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      audioEnabled = true;
+      if (audioBtn) {
+        audioBtn.textContent = "🔊 AUDIO: ON";
+        audioBtn.className = "on";
+      }
+      // ONになった時だけ、カチッと心地いい電子認証音（SE）を鳴らす
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(now + 0.16);
+    }
+    
+    // 3. 右下のジェムリン・ガイダンスパネルへの投影演出
+    const titleEl = document.querySelector("#guidanceBox .guidance-title");
+    const textEl = document.getElementById("guidanceText");
+    
+    if (titleEl && textEl) {
+      if (!isCurrentlyOn) {
+        titleEl.innerHTML = "COSMO 閃きコア・シンクロ完了";
+        textEl.textContent = "宇宙シミュレータCOSMO シンボルマークの認証に成功。空間オーディオを【起動】し、全セクターのシミュレーション同期を開始します。";
+      } else {
+        titleEl.innerHTML = "🔒 COSMO コア・サイレントモード";
+        textEl.textContent = "シンボルマーク認証により、音声信号を【スタンドバイ（消音）】に移行しました。シミュレーション演算はバックグラウンドで継続中だよ！";
+      }
+    }
+  }
+</script>
+
+<!-- ここまで、タイトルとシンボルマーク -->
+
+
+
+<div id="labels">
+  <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">衛星赤点灯</span></div>
+  <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">衛星緑点灯</span></div>
+  <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・太陽光発電） ⇒ <span style="color:#ffff33; font-weight:bold;">衛星黄点灯</span></div>
+</div>
+
+<div id="timeBox">
+  <div id="timeText">ELAPSED: 00:00:00</div>
+  <button id="audioBtn" onclick="toggleAudio(event)">🔇 AUDIO: OFF</button>
+</div>
+
+<div id="controlRoomContainer">
+  <div id="leftOperationalPanel">
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <div id="sliderBox">
+      <div class="slider-row">
+        <label>🛰️ 高度:</label>
+        <input id="altSlider" type="range" min="0" max="45000" value="400">
+        <span id="altLabel" class="slider-val">400 km</span>
+      </div>
+      <div class="slider-row">
+        <label>📐 傾斜角:</label>
+        <input id="incSlider" type="range" min="0" max="180" value="0">
+        <span id="incLabel" class="slider-val">0°</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="rightDataPanel">
+    <div id="hudBox">
+      <div class="hud-title">📡 REAL-TIME HUD TELEMETRY</div>
+      <div>TARGET ALT : <span id="hudAlt" class="hud-val">0</span> km</div>
+      <div>ORBIT VEL  : <span id="hudVel" class="hud-val">0</span> km/h</div>
+      <div>MACH SPEED : <span id="hudMach" class="hud-val">0</span> Mach</div>
+      <div>ORBIT PER  : <span id="hudPeriod" class="hud-val">0</span></div>
+      <div style="margin-top: 5px; border-top: 1px dashed rgba(0, 255, 204, 0.5); padding-top: 5px;">
+        SYS STATUS : <span id="hudStatus" style="font-weight:bold;">-</span><br>
+        TRACKING   : <span id="hudTracking" style="color:#fff;">SCANNING...</span>
+      </div>
+    </div>
+
+    <div id="mapBox">
+      <div class="map-label">🗺️ GLOBAL GROUND TRACKER</div>
+      <canvas id="mapCanvas" width="400" height="200"></canvas>
+    </div>
+    
+    <div id="presetBox">
+      <select id="presetSelect">
+        <option value="custom">-- SELECT MISSION PRESET (衛星・機体) --</option>
+        <option value="iss">ISS (国際宇宙ステーション)</option>
+        <option value="hubble">ハッブル宇宙望遠鏡</option>
+        <option value="starlink">スターリンク衛星 (SpaceX)</option>
+        <option value="daichi">地球観測衛星だいち2号 [SSO]</option>
+        <option value="gps">GPS Block III (アメリカ/次世代測位) [MEO]</option>
+        <option value="galileo">Galileo (欧州連合/民間測位) [MEO]</option>
+        <option value="beidou">北斗 / BDS (中国/全球測位システム) [MEO]</option>
+        <option value="glonass">GLONASS (ロシア/ミリタリー測位) [MEO]</option>
+        <option value="michibiki">みちびき (準天頂衛星/日本) [GEO]</option>
+        <option value="himawari">ひまわり (気象衛星/日本) [GEO]</option>
+        <option value="ssps">宇宙太陽光発電衛星 (SSPS) [GEO]</option> 
+        <option value="gundam00">軌道エレベーター基部 (天柱/人革連) [GEO]</option>
+        <option value="gundam_reentry">大気圏突入限界 (RX-78 ガンダム)</option>
+      </select>
+    </div>
+
+    <div id="launchBox">
+      <select id="launchSelect">
+        <option value="none">-- SELECT LAUNCH SITE (ロケット発射基地) --</option>
+        <option value="japan">種子島宇宙センター [JAPAN] ⇒ H3</option>
+        <option value="usa">ケネディ宇宙センター [USA] ⇒ SpaceShuttle</option>
+        <option value="kazakhstan">バイコヌール宇宙基地 [KAZAKHSTAN] ⇒ Soyuz</option>
+        <option value="france">ギアナ宇宙センター [FRANCE-GUIANA] ⇒ Ariane6</option>
+        <option value="jaburo">地球連邦軍地下基地ジャブロー [AMAZON] ⇒ WhiteBase</option>
+      </select>
+      <button id="launchBtn" onclick="triggerLaunch()">🚀 LAUNCH MISSION</button>
+    </div>
+
+    <div id="guidanceBox">
+      <div class="guidance-title">📡 AIジェムリンの管制ガイダンス</div>
+      <div id="guidanceText">ここにリアルタイム解説が表示されるよ！</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== 1. SYSTEM CORE ======
+const G = 6.67430e-11, M = 5.972e24, R_EARTH = 6371e3;
+const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
+const mapCanvas = document.getElementById("mapCanvas"), mctx = mapCanvas.getContext("2d");
+const earthImg = new Image(); earthImg.src = "earth.jpg";
+const scale = 8e-6;
+
+const slider = document.getElementById("altSlider"), altLabel = document.getElementById("altLabel");
+const incSlider = document.getElementById("incSlider"), incLabel = document.getElementById("incLabel");
+const presetSelect = document.getElementById("presetSelect");
+const launchSelect = document.getElementById("launchSelect");
+const launchBtn = document.getElementById("launchBtn");
+
+const satellitePresets = {
+  iss: { alt: 420, inc: 52, type: "iss" },
+  hubble: { alt: 525, inc: 29, type: "hubble" },
+  starlink: { alt: 550, inc: 53, type: "starlink" },
+  daichi: { alt: 666, inc: 98, type: "daichi" },       
+  gps: { alt: 20200, inc: 55, type: "gps" },         
+  galileo: { alt: 23222, inc: 56, type: "galileo" }, 
+  beidou: { alt: 21528, inc: 55, type: "beidou" },    
+  glonass: { alt: 19100, inc: 64.8, type: "glonass" }, 
+  michibiki: { alt: 36000, inc: 44, type: "michibiki" }, 
+  himawari: { alt: 35786, inc: 0, type: "himawari" },
+  ssps: { alt: 35786, inc: 0, type: "ssps" },
+  gundam00: { alt: 0, inc: 0, type: "gundam00" }, 
+  gundam_reentry: { alt: 150, inc: 28, type: "gundam" }
+};
+
+const baseToPresetSyncMap = {
+  japan: "michibiki",
+  usa: "iss",
+  kazakhstan: "glonass",
+  france: "galileo",
+  jaburo: "gundam_reentry"
+};
+
+const guidanceData = {
+  leo: { title: "LEO (低軌道 / ていきどう)", text: "地球から高度0〜2,000kmのエリアだよ！地球に一番近いから、地球をくわしく調べるカメラ（観測）や、宇宙飛行士がくらす宇宙ステーション（ISS）、みんなのネットを繋ぐ通信衛星がたくさん回っているよ！" },
+  meo: { title: "MEO (中軌道 / ちゅうきどう)", text: "高度2,000〜35,786kmのエリアだよ！ここには、車のカーナビやスマホの地図に『今どこにいるか』を教えてくれる、GPS（アメリカ）やGalileo（ヨーロッパ）、北斗（中国）、GLONASS（ロシア）などの『測位（そくい）衛星』たちが集まっているよ！" },
+  geo: { title: "GEO (静止軌道 / せいしきどう)", text: "高度35,786kmのエリアだよ！地球が自転するスピードと、衛星が地球を回るスピードが100%同じ（シンクロ）になる奇跡の指定席！だから地上からはずっと空の一点に止まって見えるんだ。ひまわりや宇宙太陽光発電（SSPS）に最適だよ！" },
+  heo: { title: "HEO (高軌道 / こうきどう)", text: "高度35,786kmを超える、地球からとても遠いエリアだよ！地球の重力がだんだん弱くなり、これ以上遠くに進むと地球を飛び出して月や別の惑星へ向かう『脱出軌道』になるんだ！" },
+  presets: {
+    iss: { title: "ISS (国際宇宙ステーション)", text: "高度約420kmの低軌道を、時速28,000km（マッハ22）という猛スピードで90分に地球を1周している巨大な宇宙の研究所！世界中の宇宙飛行士が一緒にくらして、色んな科学の実験をしているよ！" },
+    hubble: { title: "ハッブル宇宙望遠鏡", text: "高度約525kmの低軌道にいる、宇宙を見るための巨大な目の望遠鏡！大気のない宇宙から見るから、星空をものすごくハッキリ写真に撮れて、宇宙の始まりのナゾをたくさん解き明かしてくれたよ！" },
+    starlink: { title: "スターリンク衛星 (SpaceX)", text: "数千機以上の小さな衛星を低軌道にずらりと並べて、地球上のどこにいても超高速なインターネットが使えるようにするプロジェクト！電波が届きにくい山奥や島でもネットが繋がる魔法のような仕組みだよ！" },
+    daichi: { title: "地球観測衛星だいち2号 (日本)", text: "高度666kmから地球を見守る、日本の目となる衛星！暗闇や雲を突き抜ける特殊なレーダーを使って、地震や火山の噴火、台風などの災害が起きたときに地表の様子を素早くキャッチするよ！" },
+    gps: { title: "GPS Block III (アメリカ)", text: "高度20,200kmの中軌道を回る、アメリカの次世代GPS（測位）衛星！地球の周りに約30機以上がチームで回っていて、みんなのスマホに超正確な現在位置を届けてくれているんだ！" },
+    galileo: { title: "Galileo (欧州連合/ヨーロッパ)", text: "高度23,222kmの中軌道に浮かぶ、ヨーロッパ独自の測位衛星システム！軍事目的ではなく、世界中のすべての民間人がいつでも平和に、そこで極めて正確な位置情報を利用できるように作られたよ！" },
+    beidou: { title: "北斗 / BDS (中国)", text: "中国が国家プロジェクトとして高度21,528kmの中軌道を中心に配置した、全世界をカバーする独自の測位衛星ネットワーク！アメリカのGPSに頼らない、高い精度を誇るシステムだよ！" },
+    glonass: { title: "GLONASS (ロシア)", text: "ロシアが高度19,100kmの中軌道に網を張ったロシアのGLONASS（測位）衛星システム！高い傾斜角（64.8度）で回っているのが特徴で、北極やシベリアのような高緯度（寒い北の地域）でもGPSがバッチリ使えるように設計されているよ！" },
+    michibiki: { title: "準天頂衛星みちびき (日本)", text: "日本の上空で綺麗な『8の字』を描いて動く日本専用のGPS！日本の真上の空（天頂）に長くいてくれるから、ビルの影や山の中でも電波が遮られず、車の自動運転などをcm単位の超正確さでサポートできるんだ！" },
+    himawari: { title: "気象衛星ひまわり (日本)", text: "日本の真南の赤道上空にずっとピタッと静止している、日本の天気の守り神！みんながテレビやスマホで見る『天気予報の雲の動き』は、このひまわりが35,786kmの高さから撮影し続けている写真なんだよ！" },
+    ssps: { title: "宇宙太陽光発電衛星 (SSPS)", text: "未来のクリーンエネルギー基地！地球の影に入らない静止軌道で、太陽の光をたっぷり集めて、黄金のビーム（マイクロ波）に変えて、日本の杉並受電基地へ24時間ワイヤレスでノンストップで送り届ける技術だよ！" },
+    gundam00: { title: "軌道エレベーター天柱 (ガンダム00)", text: "人革連がインドネシアの赤道上（東経120度）に建設した、高さ約5万kmの巨大な宇宙へのハシゴ！太陽光発電の電磁ケーブルが地球と繋がり、内部をリニアモーターカーのように昇降機が走っているよ！" },
+    gundam_reentry: { title: "大気圏突入限界 (RX-78-2ガンダム)", text: "高度150kmの超低空は、地球の大気がだんだん濃くなり、空気の摩擦で機体が真っ赤に燃え上がる過酷な『突入限界点』！ホワイトベースは、この超過酷な状況下でガンダムを回収しなければならない！" }
+  },
+  launches: {
+    japan: { title: "種子島宇宙センター ⇒ H3", text: "日本の美しい島・種子島にある世界一きれいな射場から、新型のエース『H3ロケット』が点火！日本の自転の力を借りながら東へ飛び立ち、準天頂衛星『みちびき』を宇宙のGEO高度へと送り届ける任務に挑むよ！" },
+    usa: { title: "ケネディ宇宙センター ⇒ SpaceShuttle", text: "アメリカ・フロリダ州から、大きな翼を持った宇宙船『スペースシャトル』が打ち上がるよ！お腹に人や実験資材をいっぱい積み込んで、高度420kmをマッハ22で大激走するISSへと追いかけ、精密なドッキングを挑むんだ！" },
+    kazakhstan: { title: "バイコヌール宇宙基地 ⇒ Soyuz", text: "カザフスタンの大平原にある世界最古の宇宙基地から、伝説的な信頼性を誇るロシアの『ソユーズロケット』がテイクオフ！ロシアのGLONASS衛星を、高い角度（傾斜角64.8度）の中軌道へと送り届ける実力派だよ！" },
+    france: { title: "ギアナ宇宙センター ⇒ Ariane6", text: "南米フランス領ギアナにある、赤道に近い絶好の基地からヨーロッパの最新鋭ロケット『アリアン6』が発射！赤道直下から自転の遠心力を限界まで活かして、欧州の自立測位網『Galileo』を中軌道に配置しにいくよ！" },
+    jaburo: { title: "秘密基地ジャブロー ⇒ WhiteBase", text: "地球連邦軍の南米秘密地下基地ジャブローから、ミノフスキー・クラフトが始動！ホワイトベース（別名・木馬）は重力を無視して斜めに優雅にテイクオフし、大気圏の熱に呑まれる寸前のガンダムを回収して月へと向かう！" }
+  }
+};
+
+let currentMissionType = "custom", t = 0, audioEnabled = false, audioCtx = null;
+let lastAlertTime = 0, nextStarSoundTime = 0, spaceHum = null;
+
+let elevatorAlt = 0;       
+let elevatorDirection = 1; 
+const elevatorSpeed = 150; 
+
+let selectedLaunchSite = "none";
+
+// 発報・発射シーケンス状態制御
+let launchState = "idle";    
+let countdownTimer = 0;      
+let mapRocketYOffset = 0;    
+let mapRocketXOffset = 0;    
+let spaceRocketProgress = 0; 
+let leaveOrbitProgress = 0;  
+let cachedSatAngleAtLaunch = 0; 
+let cachedTargetAngleAtLaunch = 0; 
+let launchSmokeParticles = [];  
+let dockingTimer = 0; 
+
+let hasPlaySparkle = false;
+let dockWB_X3D = 300;
+let dockWB_Y3D = 300;
+
+let lastRocketX3D = 0;
+let lastRocketY3D = 0;
+
+let moonX = 300;
+let moonY = 300;
+
+// ====== 2. WORLD MAP DATA (経度0度〜360度基準) ======
+const detailedLandmasses = [
+  [{x: 0, y: 15}, {x: 35, y: 15}, {x: 75, y: 25}, {x: 105, y: 20}, {x: 120, y: 30}, {x: 148, y: 35}, {x: 150, y: 50}, {x: 145, y: 65}, {x: 160, y: 75}, {x: 145, y: 75}, {x: 130, y: 95}, {x: 125, y: 110}, {x: 110, y: 90}, {x: 95, y: 92}, {x: 90, y: 75}, {x: 88, y: 95}, {x: 92, y: 115}, {x: 88, y: 135}, {x: 75, y: 155}, {x: 65, y: 155}, {x: 55, y: 130}, {x: 42, y: 105}, {x: 28, y: 95}, {x: 30, y: 78}, {x: 42, y: 75}, {x: 35, y: 70}, {x: 18, y: 68}, {x: 20, y: 58}, {x: 10, y: 52}, {x: 18, y: 44}, {x: 30, y: 46}, {x: 45, y: 52}, {x: 55, y: 62}, {x: 40, y: 68}, {x: 0, y: 62}],
+  [{x: 220, y: 15}, {x: 250, y: 20}, {x: 290, y: 25}, {x: 310, y: 35}, {x: 300, y: 65}, {x: 292, y: 73}, {x: 275, y: 85}, {x: 265, y: 95}, {x: 255, y: 75}, {x: 240, y: 55}, {x: 215, y: 40}],
+  [{x: 275, y: 100}, {x: 295, y: 103}, {x: 310, y: 110}, {x: 320, y: 125}, {x: 295, y: 170}, {x: 285, y: 170}, {x: 275, y: 135}, {x: 270, y: 110}],
+  [{x: 135, y: 135}, {x: 155, y: 130}, {x: 165, y: 140}, {x: 160, y: 160}, {x: 145, y: 162}, {x: 130, y: 150}],
+  [{x: 156, y: 45}, {x: 160, y: 43}, {x: 162, y: 47}, {x: 158, y: 55}, {x: 155, y: 56}, {x: 154, y: 50}]
+];
+
+const rocketBases = {
+  japan:      { name: "JAPAN (Tanegashima)", x: 156, y: 55, rocket: "H3" },
+  usa:        { name: "USA (Cape Canaveral)", x: 291, y: 70, rocket: "SpaceShuttle" },
+  kazakhstan: { name: "KAZAKHSTAN (Baikonur)", x: 95, y: 43, rocket: "Soyuz" },
+  france:     { name: "FRANCE-GUIANA (Kourou)", x: 298, y: 108, rocket: "Ariane6" },
+  jaburo:     { name: "AMAZON (Jaburo Base)", x: 295, y: 122, rocket: "WhiteBase" }
+};
+
+const stars = [];
+for (let i = 0; i < 250; i++) { 
+  stars.push({ x: Math.random() * 800 - 100, y: Math.random() * 800 - 100, baseAlpha: Math.random() * 0.7 + 0.3, twinkleSpeed: Math.random() * 0.02 + 0.01 }); 
+}
+
+const milkyWayStars = [];
+for (let i = 0; i < 60; i++) { 
+  milkyWayStars.push({ x: Math.random() * 800 - 400, y: (Math.random() - 0.5) * 80, baseAlpha: Math.random() * 0.8 + 0.2, size: Math.random() * 1.5 + 0.5 }); 
+}
+
+const nebulaClouds = [];
+for (let i = 0; i < 22; i++) {
+  nebulaClouds.push({
+    x: Math.random() * 800 - 400,
+    y: (Math.random() - 0.5) * 120,
+    r: Math.random() * 85 + 45,
+    color: Math.random() > 0.55 ? "rgba(0, 255, 204, " : (Math.random() > 0.4 ? "rgba(102, 51, 204, " : "rgba(153, 51, 255, "),
+    alphaScale: Math.random() * 0.06 + 0.02,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+const multiSats = [];
+for (let i = 0; i < 6; i++) multiSats.push({ alt: 500e3, theta0: (Math.PI*2/6)*i, type: "leo_bg" });
+for (let i = 0; i < 4; i++) multiSats.push({ alt: 20000e3, theta0: (Math.PI*2/4)*i, type: "meo_bg" });
+for (let i = 0; i < 3; i++) multiSats.push({ alt: 35786e3, theta0: (Math.PI*2/3)*i, type: "geo_bg" });
+
+const cityLights = [];
+for (let i = 0; i < 250; i++) { 
+  cityLights.push({ angle: Math.random() * Math.PI * 2, brightness: Math.random() * 0.6 + 0.4 }); 
+}
+
+// ====== 3. AUDIO ENGINE ======
+function initAudio() { 
+  if (audioCtx) return; 
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+  spaceHum = audioCtx.createOscillator(); 
+  const humGain = audioCtx.createGain(); 
+  spaceHum.type = 'sine'; 
+  spaceHum.frequency.setValueAtTime(60, audioCtx.currentTime); 
+  humGain.gain.setValueAtTime(0.04, audioCtx.currentTime); 
+  spaceHum.connect(humGain); 
+  humGain.connect(audioCtx.destination); 
+  spaceHum.start(); 
+}
+
+function autoEnableAudio() { 
+  if (audioEnabled) return; 
+  initAudio(); 
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+  audioEnabled = true; 
+  const btn = document.getElementById("audioBtn"); 
+  btn.textContent = "🔊 AUDIO: ON"; 
+  btn.className = "on"; 
+  playSE("custom"); 
+}
+
+function toggleAudio(event) { 
+  if (event) event.stopPropagation(); 
+  const btn = document.getElementById("audioBtn"); 
+  if (!audioEnabled) { 
+    initAudio(); 
+    if (audioCtx.state === 'suspended') audioCtx.resume(); 
+    audioEnabled = true; 
+    btn.textContent = "🔊 AUDIO: ON"; 
+    btn.className = "on"; 
+    playSE("custom"); 
+  } else { 
+    if (audioCtx) audioCtx.suspend(); 
+    audioEnabled = false; 
+    btn.textContent = "🔇 AUDIO: OFF"; 
+    btn.className = ""; 
+  } 
+}
+
+function playStarSound() { 
+  if(!audioEnabled || !audioCtx) return; 
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+  osc.type = 'sine'; 
+  osc.frequency.setValueAtTime(1000 + Math.random()*500, audioCtx.currentTime); 
+  gain.gain.setValueAtTime(0.06, audioCtx.currentTime); 
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0); 
+  osc.connect(gain); 
+  gain.connect(audioCtx.destination); 
+  osc.start(); 
+  osc.stop(audioCtx.currentTime + 3.0); 
+}
+
+function playSE(type) { 
+  if(!audioEnabled || !audioCtx) return; 
+  const now = audioCtx.currentTime; 
+  
+  if(type === "japan_alert") { 
+    for(let i=0; i<3; i++) { 
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+      osc.frequency.setValueAtTime(1800, now + i*0.15); 
+      gain.gain.setValueAtTime(0.08, now + i*0.15); 
+      gain.gain.setValueAtTime(0, now + i*0.15 + 0.08); 
+      osc.connect(gain); 
+      gain.connect(audioCtx.destination); 
+      osc.start(now + i*0.15); 
+      osc.stop(now + i*0.15 + 0.08); 
+    } 
+    return; 
+  } 
+  
+  if (type === "wb_ignite") {
+    const oscLow = audioCtx.createOscillator(), gainLow = audioCtx.createGain(); 
+    const oscHigh = audioCtx.createOscillator(), gainHigh = audioCtx.createGain();
+    oscLow.type = 'sine'; 
+    oscLow.frequency.setValueAtTime(90, now); 
+    oscLow.frequency.linearRampToValueAtTime(55, now + 3.0); 
+    gainLow.gain.setValueAtTime(0.28, now); 
+    gainLow.gain.exponentialRampToValueAtTime(0.01, now + 3.0);
+    
+    oscHigh.type = 'triangle'; 
+    oscHigh.frequency.setValueAtTime(600, now); 
+    oscHigh.frequency.exponentialRampToValueAtTime(1600, now + 2.5); 
+    gainHigh.gain.setValueAtTime(0.12, now); 
+    gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+    
+    oscLow.connect(gainLow); gainLow.connect(audioCtx.destination); 
+    oscHigh.connect(gainHigh); gainHigh.connect(audioCtx.destination);
+    oscLow.start(); oscLow.stop(now + 3.0); 
+    oscHigh.start(); oscHigh.stop(now + 3.0);
+    return;
+  }
+  
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); 
+  
+  if(type==="iss"){ 
+    osc.type='sawtooth'; 
+    osc.frequency.setValueAtTime(150, now); 
+    osc.frequency.linearRampToValueAtTime(300, now+0.8); 
+    gain.gain.setValueAtTime(0.05, now); 
+  } 
+  else if(type==="gundam" || type==="gundam00" || type==="rocket_select" || type==="beidou" || type==="glonass" || type==="custom" || type==="ssps" || type==="michibiki" || type==="himawari"){ 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(100, now); 
+    osc.frequency.linearRampToValueAtTime(50, now+0.08); 
+    osc.frequency.exponentialRampToValueAtTime(700, now+0.4); 
+    gain.gain.setValueAtTime(0.08, now); 
+  } 
+  else if(type==="beep"){ 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(1200, now); 
+    gain.gain.setValueAtTime(0.08, now); 
+    gain.gain.exponentialRampToValueAtTime(0.001, now+0.08); 
+  }
+  else if(type==="ignite"){ 
+    osc.type='sawtooth'; 
+    osc.frequency.setValueAtTime(80, now); 
+    osc.frequency.linearRampToValueAtTime(30, now+2.5); 
+    gain.gain.setValueAtTime(0.25, now); 
+  }
+  else if(type==="lock"){ 
+    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain(); 
+    osc.type='sine'; 
+    osc.frequency.setValueAtTime(1600, now); 
+    gain.gain.setValueAtTime(0.06, now); 
+    gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+    
+    osc2.type='sine'; 
+    osc2.frequency.setValueAtTime(2200, now+0.04); 
+    gain2.gain.setValueAtTime(0.06, now+0.04); 
+    gain2.gain.exponentialRampToValueAtTime(0.001, now+0.09);
+    
+    osc2.connect(gain2); 
+    gain2.connect(audioCtx.destination); 
+    osc2.start(now+0.04); 
+    osc2.stop(now+0.1);
+  }
+  else if(type==="success"){ 
+    const notes = [523.25, 659.25, 783.99, 1046.50]; 
+    notes.forEach((freq, idx) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(freq, now + idx * 0.08);
+      g.gain.setValueAtTime(0.07, now + idx * 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(now + idx * 0.08);
+      o.stop(now + idx * 0.08 + 0.3);
+    });
+    return;
+  }
+  else if(type==="sparkle") {
+    const osc1 = audioCtx.createOscillator(), gain1 = audioCtx.createGain(); 
+    const osc2 = audioCtx.createOscillator(), gain2 = audioCtx.createGain(); 
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "highpass"; filter.frequency.setValueAtTime(1600, now);
+    osc1.type = 'sine'; osc1.frequency.setValueAtTime(1500, now); osc1.frequency.exponentialRampToValueAtTime(4200, now + 1.2); gain1.gain.setValueAtTime(0.1, now); gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    osc2.type = 'triangle'; osc2.frequency.setValueAtTime(2000, now); osc2.frequency.exponentialRampToValueAtTime(5500, now + 0.9); gain2.gain.setValueAtTime(0.04, now); gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+    osc1.connect(gain1); gain1.connect(filter); osc2.connect(gain2); gain2.connect(filter); filter.connect(audioCtx.destination);
+    osc1.start(); osc1.stop(now + 1.3); osc2.start(); osc2.stop(now + 1.3);
+    return;
+  }
+  else { 
+    osc.frequency.setValueAtTime(880, now); 
+    gain.gain.setValueAtTime(0.05, now); 
+  } 
+  
+  gain.gain.linearRampToValueAtTime(0.0001, now+2.5); 
+  osc.connect(gain); 
+  gain.connect(audioCtx.destination); 
+  osc.start(); 
+  osc.stop(now+2.5); 
+}
+
+// ====== 4. COORDINATE MAPPING ======
+function toMapX(lonDeg) {
+  let lon360 = (lonDeg < 0) ? (lonDeg + 360) : lonDeg; return (lon360 / 360) * 400;
+}
+function toMapY(latDeg) {
+  return 100 - (latDeg / 90) * 100;
+}
+
+function drawSpaceBackground(incRad) {
+  const spaceRotationAngle = t * 0.00007;
+
+  ctx.save();
+  ctx.translate(300, 300); 
+  ctx.rotate(spaceRotationAngle);
+
+  ctx.save();
+  ctx.rotate(Math.PI / 6); 
+  
+  let milkyGrad = ctx.createLinearGradient(0, -90, 0, 90);
+  milkyGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  milkyGrad.addColorStop(0.35, "rgba(102, 51, 204, 0.03)");  
+  milkyGrad.addColorStop(0.5, "rgba(0, 255, 204, 0.08)");   
+  milkyGrad.addColorStop(0.65, "rgba(102, 51, 204, 0.03)");
+  milkyGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = milkyGrad;
+  ctx.fillRect(-600, -90, 1200, 180);
+
+  for (let nc of nebulaClouds) {
+    const dynamicAlpha = nc.alphaScale * (1.0 + Math.sin(t * 0.018 + nc.phase) * 0.25);
+    let radialGrad = ctx.createRadialGradient(nc.x, nc.y, 0, nc.x, nc.y, nc.r);
+    radialGrad.addColorStop(0, `${nc.color}${dynamicAlpha})`);
+    radialGrad.addColorStop(0.45, `${nc.color}${dynamicAlpha * 0.4})`);
+    radialGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    
+    ctx.fillStyle = radialGrad;
+    ctx.beginPath();
+    ctx.arc(nc.x, nc.y, nc.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let ms of milkyWayStars) {
+    const mAlpha = ms.baseAlpha + Math.sin(t * 0.03 + ms.x) * 0.15;
+    ctx.fillStyle = `rgba(255, 255, 255, ${mAlpha})`;
+    ctx.beginPath();
+    ctx.arc(ms.x, ms.y, ms.size, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore(); 
+
+  ctx.translate(-300, -300);
+  for (let s of stars) { 
+    const alpha = s.baseAlpha + Math.sin(t * s.twinkleSpeed) * 0.3; 
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`; 
+    ctx.fillRect(s.x, s.y, 2, 2); 
+  }
+  ctx.restore(); 
+
+  const MOON_INC = 23.4 * Math.PI / 180; 
+  drawOrbitRingInclined(R_EARTH + 380000e3, MOON_INC, "rgba(255,255,255,0.06)"); 
+
+  const moonAngle = t * 0.0002;
+  const moonRadius3D = 250 / scale; 
+  
+  moonX = 300 + moonRadius3D * Math.cos(moonAngle) * scale;
+  moonY = 300 + moonRadius3D * Math.sin(moonAngle) * Math.cos(MOON_INC) * scale;
+
+  ctx.save();
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#ffffff";
+  ctx.fillStyle = "#fcfaf2";
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 7, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(0, 10, 25, 0.55)";
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 7, -Math.PI/2, Math.PI/2, true); 
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawWorldMap() {
+  mctx.fillStyle = "#000810"; mctx.fillRect(0,0,400,200);
+  mctx.strokeStyle = "rgba(0, 255, 204, 0.08)"; mctx.lineWidth = 1;
+  for(let x=0; x<=400; x+=20){ mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,200); mctx.stroke(); }
+  for(let y=0; y<=200; y+=20){ mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(400,y); mctx.stroke(); }
+  mctx.fillStyle = "rgba(0, 255, 204, 0.15)"; mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.lineWidth = 1.2;
+  detailedLandmasses.forEach(polygon => {
+    if (polygon.length === 0) return;
+    mctx.beginPath(); mctx.moveTo(polygon[0].x, polygon[0].y);
+    for (let i = 1; i < polygon.length; i++) { mctx.lineTo(polygon[i].x, polygon[i].y); }
+    mctx.closePath(); mctx.fill(); mctx.stroke();
+  });
+  for (let key in rocketBases) {
+    const base = rocketBases[key]; mctx.beginPath(); mctx.fillStyle = "rgba(0, 255, 204, 0.6)"; mctx.arc(base.x, base.y, 2, 0, Math.PI * 2); mctx.fill();
+  }
+  if (selectedLaunchSite !== "none") {
+    const activeBase = rocketBases[selectedLaunchSite]; mctx.save();
+    mctx.translate(activeBase.x + mapRocketXOffset, activeBase.y - mapRocketYOffset);
+    mctx.strokeStyle = (launchState === "countdown" || launchState === "map_climb") ? "#ff3333" : "#ffcc00"; 
+    mctx.lineWidth = 1; mctx.strokeRect(-12, -20, 24, 34);
+    const flame = (launchState === "map_climb") ? 8 : 0;
+    if (selectedLaunchSite === "jaburo" && launchState === "map_climb") { mctx.rotate(Math.atan2(-1.0, 1.3) + Math.PI/2); }
+    renderRocketModel(mctx, selectedLaunchSite, flame); mctx.restore();
+  }
+}
+
+function drawGroundTrack(incRad, earthAngle) {
+  mctx.beginPath(); mctx.strokeStyle = "rgba(0, 255, 204, 0.4)"; mctx.setLineDash([2, 4]);
+  for(let i=0; i<400; i+=4) {
+    const angle = (i / 400) * Math.PI * 2, lat = Math.asin(Math.sin(incRad) * Math.sin(angle)), lon = angle - earthAngle;
+    const mx = ((lon / (Math.PI*2)) % 1 * 400 + 400) % 400, my = 100 - (lat / (Math.PI/2)) * 100;
+    if(i===0) mctx.moveTo(mx, my); else mctx.lineTo(mx, my);
+  }
+  mctx.stroke(); mctx.setLineDash([]);
+}
+
+function drawCustomSatelliteIcon(targetCtx, x, y, type, defaultAlt, is2D=false) { 
+  targetCtx.save(); targetCtx.translate(x, y); 
+  if(is2D) { targetCtx.scale(1.5, 1.5); } else { targetCtx.scale(2.0, 2.0); } 
+  switch(type) { 
+    case "iss": 
+      targetCtx.fillStyle = "#66aaff"; targetCtx.fillRect(-20,-10,4,20); targetCtx.fillRect(16,-10,4,20); targetCtx.fillStyle="#aaaaaa"; targetCtx.fillRect(-16,-1,32,3); targetCtx.fillStyle="#ffffff"; targetCtx.fillRect(-5,-5,10,10); 
+      break; 
+    case "hubble": 
+      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-5, -10, 10, 20); targetCtx.fillStyle = "#00ffcc"; targetCtx.fillRect(-14, -3, 9, 2); targetCtx.fillRect(5, -3, 9, 2); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-2, -12, 4, 2); 
+      break; 
+    case "starlink": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -3, 6, 6); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-2, -18, 4, 15); 
+      break; 
+    case "daichi": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(5, -2, 16, 4); targetCtx.fillStyle = "#888888"; targetCtx.fillRect(-3, 5, 6, 3); 
+      break; 
+    case "gps": 
+      targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-15, -1, 11, 2); targetCtx.fillRect(4, -1, 11, 2); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, -7, 2, 3);  
+      break;
+    case "galileo": 
+      targetCtx.fillStyle = "#cccccc"; targetCtx.fillRect(-3, -5, 6, 10); targetCtx.fillStyle = "#0055ff"; targetCtx.fillRect(-18, -1.5, 15, 3); targetCtx.fillRect(3, -1.5, 15, 3);  
+      break; 
+    case "beidou": 
+      targetCtx.fillStyle = "#cc3333"; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#44aaee"; targetCtx.fillRect(-14, -3, 10, 6); targetCtx.fillRect(4, -3, 10, 6); targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -6, 2, 2); 
+      break;
+    case "glonass": 
+      targetCtx.fillStyle = "#778899"; targetCtx.fillRect(-3, -6, 6, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 13, 2); targetCtx.fillRect(3, -2, 13, 2); targetCtx.fillRect(-16, 2, 13, 2);  
+      break;
+    case "michibiki": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -5, 10, 10); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-18, -3, 13, 5); targetCtx.fillRect(5, -3, 13, 5); targetCtx.fillStyle = "red"; targetCtx.fillRect(-2, 5, 4, 4); 
+      break; 
+    case "himawari": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-6, -6, 12, 12); targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-22, -2, 16, 5); targetCtx.strokeStyle = "#ff00ff"; targetCtx.lineWidth = 2; targetCtx.beginPath(); targetCtx.moveTo(6, 0); targetCtx.lineTo(18, -4); targetCtx.stroke(); 
+      break; 
+    case "ssps": 
+      targetCtx.fillStyle = "#ffd700"; targetCtx.fillRect(-22, -12, 12, 24); targetCtx.fillRect(10, -12, 12, 24); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -3, 20, 6); targetCtx.fillStyle = "#ffaa00"; targetCtx.fillRect(-5, -5, 10, 10);
+      break;
+    case "gundam00": 
+      targetCtx.fillStyle = "cyan"; targetCtx.beginPath(); targetCtx.arc(0, 0, 5, 0, Math.PI * 2); targetCtx.fill(); targetCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; targetCtx.lineWidth = 1.5; targetCtx.strokeRect(-6, -6, 12, 12); 
+      break; 
+    case "gundam": 
+      targetCtx.fillStyle = "white"; targetCtx.fillRect(-3, -9, 6, 5); targetCtx.fillStyle = "blue"; targetCtx.fillRect(-4, -4, 8, 4); targetCtx.fillStyle = "red"; targetCtx.fillRect(-3, 0, 6, 3); targetCtx.fillStyle = "white"; targetCtx.fillRect(-4, 3, 3, 7); targetCtx.fillRect(1, 3, 3, 7); targetCtx.fillStyle = "yellow"; targetCtx.fillRect(-8, -3, 3, 6); 
+      break; 
+    default: 
+      let coreColor = "yellow"; if (defaultAlt < 2000e3) { coreColor = "#ff3333"; } else if (defaultAlt < 35786e3) { coreColor = "#33ff33"; } targetCtx.fillStyle = "#336699"; targetCtx.fillRect(-16, -2, 10, 4); targetCtx.fillRect(6, -2, 10, 4); targetCtx.fillStyle = "#aaaaaa"; targetCtx.fillRect(-6, -1, 12, 2); targetCtx.fillStyle = coreColor; targetCtx.fillRect(-4, -4, 8, 8); targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-1, 4, 2, 2); 
+      break; 
+  } 
+  targetCtx.restore(); 
+}
+
+function drawOrbitRingInclined(r, incRad, color) { 
+  ctx.lineWidth = 2; 
+  for (let a = 0; a < Math.PI * 2; a += 0.02) { 
+    const x3 = r * Math.cos(a);
+    const y3 = r * Math.sin(a) * Math.cos(incRad);
+    const z3 = r * Math.sin(a) * Math.sin(incRad); 
+    const sx = 300 + x3 * scale;
+    const sy = 300 + y3 * scale * (1 - z3 / r * 0.4); 
+    const alpha = (z3 < 0) ? 0.15 : 1.0; 
+    const rgba = color.replace("1)", alpha + ")"); 
+    if (a === 0) { 
+      ctx.beginPath(); 
+      ctx.strokeStyle = rgba; 
+      ctx.moveTo(sx, sy); 
+    } else { 
+      ctx.strokeStyle = rgba; 
+      ctx.lineTo(sx, sy); 
+    } 
+  } 
+  ctx.stroke(); 
+}
+
+function triggerLaunch() {
+  if (selectedLaunchSite === "none" || launchState !== "idle") return;
+  launchState = "countdown"; countdownTimer = 180; mapRocketYOffset = 0; mapRocketXOffset = 0; leaveOrbitProgress = 0; launchBtn.className = "launching"; launchBtn.textContent = "🔒 IN FLIGHT...";
+  hasPlaySparkle = false;
+  if (selectedLaunchSite === "jaburo") { playSE("wb_ignite"); } else { playSE("beep"); }
+}
+
+function renderRocketModel(targetCtx, siteKey, flameIntensity=0) {
+  switch(siteKey) {
+    case "japan": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-2, -16, 4, 24); 
+      targetCtx.fillStyle = "#00aaff"; targetCtx.fillRect(-2, -6, 4, 1);  
+      targetCtx.fillStyle = "#dddddd"; targetCtx.fillRect(-4, 0, 2, 8); targetCtx.fillRect(2, 0, 2, 8);    
+      targetCtx.fillStyle = "#ff6600"; targetCtx.fillRect(-1, 8, 2, 2);   
+      break;
+    case "usa": 
+      targetCtx.fillStyle = "#d2691e"; targetCtx.fillRect(-3, -15, 6, 23); 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-5, -7, 2, 14); targetCtx.fillRect(3, -4, 3, 10);   
+      targetCtx.fillStyle = "#000000"; targetCtx.fillRect(3, 2, 5, 3);    
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(3, -6, 2, 2);   
+      break;
+    case "kazakhstan": 
+      targetCtx.fillStyle = "#557755"; targetCtx.fillRect(-1.5, -17, 3, 25); 
+      targetCtx.fillStyle = "#446644"; targetCtx.fillRect(-3.5, -1, 2, 9); targetCtx.fillRect(1.5, -1, 2, 9);    
+      targetCtx.fillStyle = "#cc5500"; targetCtx.fillRect(-2, 8, 4, 1);     
+      break;
+    case "france": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-2.5, -14, 5, 22); 
+      targetCtx.fillStyle = "#111111"; targetCtx.fillRect(-2.5, -14, 5, 4);  
+      targetCtx.fillStyle = "#0044cc"; targetCtx.fillRect(-4.5, 0, 2, 8); targetCtx.fillRect(2.5, 0, 2, 8);    
+      break;
+    case "jaburo": 
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-3, -10, 6, 16);  
+      targetCtx.fillStyle = "#ff3333"; targetCtx.fillRect(-3, -2, 6, 3);    
+      targetCtx.fillStyle = "#ffffff"; targetCtx.fillRect(-10, -5, 4, 15); targetCtx.fillRect(6, -5, 4, 15);    
+      targetCtx.fillStyle = "#3366cc"; targetCtx.fillRect(-10, 5, 4, 2); targetCtx.fillRect(6, 5, 4, 2);
+      targetCtx.fillStyle = "#ffcc00"; targetCtx.fillRect(-1, -12, 2, 2);   
+      break;
+  }
+  if (flameIntensity > 0) {
+    if (siteKey === "jaburo") {
+      targetCtx.fillStyle = Math.random() > 0.5 ? "#00ffff" : "#0088ff"; targetCtx.fillRect(-3, 8, 6, flameIntensity + Math.random()*8);
+      targetCtx.fillStyle = "#00ffff"; targetCtx.fillRect(-9, 10, 2, flameIntensity*0.5); targetCtx.fillRect(7, 10, 2, flameIntensity*0.5);
+    } else {
+      targetCtx.fillStyle = Math.random() > 0.5 ? "#ff3300" : "#ffaa00"; targetCtx.fillRect(-2, 10, 4, flameIntensity + Math.random()*6);
+    }
+  }
+}
+
+function drawSF_LockonTarget(targetCtx, x, y, size=18, color="#ff2222") {
+  targetCtx.save(); targetCtx.translate(x, y); 
+  const pulseScale = 1.0 + Math.sin(t * 0.15) * 0.1; const rotateAngle = t * 0.02;
+  targetCtx.strokeStyle = color; targetCtx.lineWidth = 1.5; targetCtx.rotate(rotateAngle);
+  const half = size * pulseScale; const len = size * 0.35;
+  targetCtx.beginPath(); targetCtx.moveTo(-half, -half + len); targetCtx.lineTo(-half, -half); targetCtx.lineTo(-half + len, -half); targetCtx.stroke();
+  targetCtx.beginPath(); targetCtx.moveTo(half - len, -half); targetCtx.lineTo(half, -half); targetCtx.lineTo(half, -half + len); targetCtx.stroke();
+  targetCtx.beginPath(); targetCtx.moveTo(half, half - len); targetCtx.lineTo(half, half); targetCtx.lineTo(half - len, half); targetCtx.stroke();
+  targetCtx.beginPath(); targetCtx.moveTo(-half + len, half); targetCtx.lineTo(-half, half); targetCtx.lineTo(-half, half - len); targetCtx.stroke();
+  if (Math.sin(t * 0.3) > -0.2) {
+    targetCtx.beginPath(); targetCtx.arc(0, 0, size * 0.5, 0, Math.PI * 2); targetCtx.strokeStyle = "rgba(255,34,34,0.45)"; targetCtx.stroke();
+    targetCtx.fillStyle = color; targetCtx.beginPath(); targetCtx.arc(0, 0, 1.5, 0, Math.PI * 2); targetCtx.fill();
+  }
+  targetCtx.restore();
+}
+
+function updateGuidancePanel(currentAltKM) {
+  const guidanceTextEl = document.getElementById("guidanceText"); const baseSelect = launchSelect.value; const presetValue = presetSelect.value;
+  let title = "📡 AIジェムリンの管制ガイダンス"; let text = "現在の高度やプリセット、打ち上げ目標に応じた、ジェムリンによるリアルタイム解説がここに表示されるよ！";
+
+  if (baseSelect !== "none") {
+    const data = guidanceData.launches[baseSelect]; if (data) { title = `🚀 管制室ボイス: [${data.title}]`; text = data.text; }
+  } else if (presetValue !== "custom") {
+    const data = guidanceData.presets[presetValue]; if (data) { title = `🛰️ 衛星ガイダンス: [${data.title}]`; text = data.text; }
+  } else {
+    if (currentAltKM <= 2000) { title = `🛰️ 高度解説: [${guidanceData.leo.title}]`; text = guidanceData.leo.text; } 
+    else if (currentAltKM < 35786) { title = `🛰️ 高度解説: [${guidanceData.meo.title}]`; text = guidanceData.meo.text; } 
+    else if (currentAltKM === 35786) { title = `🛰️ 高度解説: [${guidanceData.geo.title}]`; text = guidanceData.geo.text; } 
+    else { title = `🛰️ 高ed解説: [${guidanceData.heo.title}]`; text = guidanceData.heo.text; }
+  }
+  document.querySelector("#guidanceBox .guidance-title").textContent = title; guidanceTextEl.textContent = text;
+}
+
+// ====== 5. MAIN LOOP ======
+function update() {
+  ctx.clearRect(0,0,600,600); mctx.clearRect(0,0,400,200);
+  
+  const alt = slider.value * 1000, incDeg = incSlider.value, incRad = incDeg * Math.PI/180;
+  drawSpaceBackground(incRad); 
+  
+  drawWorldMap();
+  if (audioEnabled && t >= nextStarSoundTime) { playStarSound(); nextStarSoundTime = t + 180 + Math.random()*180; }
+
+  const markerR = R_EARTH * scale;
+
+  const isMissionActive = (launchState !== "idle");
+  slider.disabled = isMissionActive;
+  incSlider.disabled = isMissionActive;
+  presetSelect.disabled = isMissionActive;
+  launchSelect.disabled = isMissionActive;
+
+  const sliderBox = document.getElementById("sliderBox");
+  const presetBox = document.getElementById("presetBox");
+  const launchBox = document.getElementById("launchBox");
+
+  if (isMissionActive) {
+    sliderBox.style.opacity = "0.4";
+    sliderBox.style.pointerEvents = "none";
+    presetBox.style.opacity = "0.4";
+    presetBox.style.pointerEvents = "none";
+    launchBox.style.opacity = "0.6";
+  } else {
+    sliderBox.style.opacity = "1.0";
+    sliderBox.style.pointerEvents = "auto";
+    presetBox.style.opacity = "1.0";
+    presetBox.style.pointerEvents = "auto";
+    launchBox.style.opacity = "1.0";
+  }
+
+  if (currentMissionType === "gundam00" && launchState === "idle") {
+    elevatorAlt += elevatorSpeed * elevatorDirection;
+    if (elevatorAlt >= 35786) { elevatorAlt = 35786; elevatorDirection = -1; } 
+    else if (elevatorAlt <= 0) { elevatorAlt = 0; elevatorDirection = 1; }
+    slider.value = Math.round(elevatorAlt);
+    altLabel.textContent = slider.value + " km";
+  }
+
+  let currentAltKM = parseInt(slider.value);
+  let targetPresetAlt = satellitePresets[presetSelect.value] ? satellitePresets[presetSelect.value].alt : currentAltKM;
+
+  const r = R_EARTH + alt, v = Math.sqrt(G*M / r), omega_sat = (v/r)*10, earthAngle = (2*Math.PI/86164)*10*t;
+  const satAngle = (currentMissionType === "gundam00") ? earthAngle : omega_sat * t;
+
+  let mx, my;
+  if (currentMissionType === "himawari") { mx = toMapX(140.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "ssps") { mx = toMapX(135.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "gundam00") { mx = toMapX(120.0); my = toMapY(0.0); } 
+  else if (currentMissionType === "michibiki") {
+    let loopLon = 138 + 10 * Math.sin(satAngle); let loopLat = 22 + 18 * Math.sin(satAngle * 2); mx = toMapX(loopLon); my = toMapY(loopLat);
+  } else {
+    let lonDeg = ((satAngle - earthAngle) * 180 / Math.PI) % 360; if (lonDeg > 180) lonDeg -= 360; if (lonDeg < -180) lonDeg += 360;
+    let latDeg = Math.asin(Math.sin(incRad) * Math.sin(satAngle)) * 180 / Math.PI; mx = toMapX(lonDeg); my = toMapY(latDeg);
+  }
+
+  if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { drawSF_LockonTarget(mctx, mx, my, 22, "#ff3333"); }
+
+  if (launchState === "countdown") {
+    currentAltKM = 0; countdownTimer--; if (countdownTimer % 60 === 0 && countdownTimer > 0) { if (selectedLaunchSite !== "jaburo") playSE("beep"); }
+    if (countdownTimer <= 0) { launchState = "map_climb"; mapRocketYOffset = 0; mapRocketXOffset = 0; playSE(selectedLaunchSite === "jaburo" ? "wb_ignite" : "ignite"); }
+  } else if (launchState === "map_climb") {
+    currentAltKM = Math.min(80, Math.floor(mapRocketYOffset * 2)); if (selectedLaunchSite === "jaburo") { mapRocketYOffset += 1.0; mapRocketXOffset += 1.3; } else { mapRocketYOffset += 1.8; mapRocketXOffset = 0; }
+    const activeBase = rocketBases[selectedLaunchSite];
+    if (activeBase.y - mapRocketYOffset < -20 || activeBase.x + mapRocketXOffset > 420) {
+      launchState = "space_climb"; spaceRocketProgress = 0; cachedSatAngleAtLaunch = earthAngle; cachedTargetAngleAtLaunch = satAngle;
+      const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2; const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
+      lastRocketX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale; lastRocketY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
+    }
+  } else if (launchState === "space_climb") {
+    currentAltKM = Math.floor(targetPresetAlt * spaceRocketProgress); const speedFactor = (selectedLaunchSite === "jaburo" ? 0.004 : (0.0012 + (spaceRocketProgress * 0.009))); spaceRocketProgress += speedFactor;
+    if (spaceRocketProgress >= 1.0) { launchState = "docking_success"; dockingTimer = 90; playSE("success"); dockWB_X3D = lastRocketX3D; dockWB_Y3D = lastRocketY3D; }
+  } else if (launchState === "docking_success") {
+    currentAltKM = targetPresetAlt; dockingTimer--;
+    if (dockingTimer <= 0) {
+      if (selectedLaunchSite === "jaburo") { launchState = "leave_orbit"; leaveOrbitProgress = 0; playSE("wb_ignite"); } 
+      else { launchState = "idle"; selectedLaunchSite = "none"; launchSelect.value = "none"; launchBtn.className = ""; launchBtn.textContent = "🚀 LAUNCH MISSION"; mapRocketYOffset = 0; mapRocketXOffset = 0; }
+    }
+  } else if (launchState === "leave_orbit") {
+    currentAltKM = Math.floor(targetPresetAlt + (5000 * leaveOrbitProgress)); leaveOrbitProgress += 0.0022; 
+    if (leaveOrbitProgress >= 1.0) { launchState = "idle"; selectedLaunchSite = "none"; launchSelect.value = "none"; launchBtn.className = ""; launchBtn.textContent = "🚀 LAUNCH MISSION"; mapRocketYOffset = 0; mapRocketXOffset = 0; }
+  }
+
+  drawGroundTrack(incRad, earthAngle); 
+  
+  drawCustomSatelliteIcon(mctx, mx, my, currentMissionType, alt, true);
+
+  ctx.save(); 
+  ctx.translate(300, 300); 
+
+  ctx.save();
+  ctx.rotate(earthAngle);
+  if (earthImg.complete && earthImg.naturalWidth !== 0) { 
+    ctx.beginPath();
+    ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(earthImg, -R_EARTH*scale, -R_EARTH*scale, R_EARTH*2*scale, R_EARTH*2*scale); 
+  } else {
+    let earthFallbackGrad = ctx.createRadialGradient(
+      R_EARTH*scale*0.35, -R_EARTH*scale*0.1, 0,
+      0, 0, R_EARTH*scale
+    );
+    earthFallbackGrad.addColorStop(0, "#00aaff"); 
+    earthFallbackGrad.addColorStop(0.6, "#0044aa");
+    earthFallbackGrad.addColorStop(1, "#001133");  
+    ctx.fillStyle = earthFallbackGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, R_EARTH*scale, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore(); 
+
+  let shadowGrad = ctx.createLinearGradient(
+    -R_EARTH * scale * 0.75, R_EARTH * scale * 0.25,  
+    R_EARTH * scale * 0.75, -R_EARTH * scale * 0.25   
+  );
+  shadowGrad.addColorStop(0, "rgba(0, 4, 12, 0.85)");     
+  shadowGrad.addColorStop(0.35, "rgba(0, 6, 18, 0.78)");    
+  shadowGrad.addColorStop(0.55, "rgba(5, 10, 25, 0.48)");   
+  shadowGrad.addColorStop(0.72, "rgba(10, 30, 60, 0.08)");   
+  shadowGrad.addColorStop(1.0, "rgba(0, 0, 0, 0)");        
+  
+  ctx.fillStyle = shadowGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  let sphereGrad = ctx.createRadialGradient(
+    0, 0, R_EARTH * scale * 0.78,
+    0, 0, R_EARTH * scale
+  );
+  sphereGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  sphereGrad.addColorStop(1, "rgba(0, 4, 12, 0.6)"); 
+  
+  ctx.fillStyle = sphereGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  let limbGrad = ctx.createRadialGradient(
+    R_EARTH * scale * 0.35, -R_EARTH * scale * 0.08, R_EARTH * scale * 0.88,
+    0, 0, R_EARTH * scale * 1.05
+  );
+  limbGrad.addColorStop(0, "rgba(0, 255, 255, 0)");
+  limbGrad.addColorStop(0.85, "rgba(0, 160, 255, 0.12)");
+  limbGrad.addColorStop(0.96, "rgba(0, 200, 255, 0.42)"); 
+  limbGrad.addColorStop(1.0, "rgba(0, 255, 255, 0)");
+  
+  ctx.fillStyle = limbGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, R_EARTH * scale * 1.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore(); 
+
+  const mmx = 300 + markerR * Math.cos(earthAngle), mmy = 300 + markerR * Math.sin(earthAngle); 
+  ctx.beginPath(); 
+  ctx.fillStyle = "cyan"; 
+  ctx.arc(mmx, mmy, 4, 0, Math.PI * 2); 
+  ctx.fill();
+  
+  for (let c of cityLights) { 
+    const angle = c.angle + earthAngle, cx_light = 300 + markerR * Math.cos(angle), cy_light = 300 + markerR * Math.sin(angle); 
+    if (Math.cos(angle) * 0.4 + Math.sin(angle) * (-0.1) < 0) { 
+      ctx.fillStyle = `rgba(255,220,100,${c.brightness})`; 
+      ctx.fillRect(cx_light, cy_light, 2, 2); 
+    } 
+  }
+  
+  // 背景の自動周回衛星たち（マルチサッツ）の3D軌道リング＆アイコン描画
+  multiSats.forEach(sat => {
+    let orbitColor = "rgba(100, 150, 255, 0.15)";
+    if (sat.type === "meo_bg") orbitColor = "rgba(100, 255, 150, 0.15)";
+    if (sat.type === "geo_bg") orbitColor = "rgba(255, 255, 0, 0.15)";
+    
+    drawOrbitRingInclined(R_EARTH + sat.alt, incRad, orbitColor);
+    
+    const bgV = Math.sqrt(G * M / (R_EARTH + sat.alt));
+    const bgOmega = (bgV / (R_EARTH + sat.alt)) * 10;
+    const bgAngle = sat.theta0 + bgOmega * t;
+    
+    const bgX = 300 + (R_EARTH + sat.alt) * Math.cos(bgAngle) * scale;
+    const bgY = 300 + (R_EARTH + sat.alt) * Math.sin(bgAngle) * Math.cos(incRad) * scale;
+    
+    ctx.save();
+    ctx.fillStyle = sat.type === "leo_bg" ? "#ff3333" : (sat.type === "meo_bg" ? "#33ff33" : "#ffff33");
+    ctx.beginPath();
+    ctx.arc(bgX, bgY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+  
+  drawOrbitRingInclined(R_EARTH + 500e3, incRad, selectedLaunchSite==="usa" ? "rgba(255,50,50,1)" : "rgba(100,150,255,0.4)"); 
+  drawOrbitRingInclined(R_EARTH + 21000e3, incRad, (selectedLaunchSite==="france"||selectedLaunchSite==="kazakhstan") ? "rgba(255,50,50,1)" : "rgba(100,255,150,0.4)"); 
+  drawOrbitRingInclined(R_EARTH + 35786e3, incRad, selectedLaunchSite==="japan" ? "rgba(255,50,50,1)" : "rgba(255,255,0,0.4)"); 
+  drawOrbitRingInclined(r, incRad, "rgba(255,255,255,0.8)");
+
+  const satX = 300 + r * Math.cos(satAngle) * scale, satY = 300 + r * Math.sin(satAngle) * Math.cos(incRad) * scale;
+  if (selectedLaunchSite !== "none" && launchState !== "leave_orbit") { drawSF_LockonTarget(ctx, satX, satY, 26, "#ff3333"); }
+
+  if (currentMissionType === "gundam00" && launchState === "idle") {
+    const geoR = R_EARTH + 35786e3; const gmmx = 300 + markerR * Math.cos(satAngle), gmmy = 300 + markerR * Math.sin(satAngle);
+    const gsx = 300 + geoR * Math.cos(satAngle) * scale, gsy = 300 + geoR * Math.sin(satAngle) * Math.cos(incRad) * scale;
+    ctx.beginPath(); ctx.strokeStyle = "rgba(0, 255, 255, 0.35)"; ctx.lineWidth = 4; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
+    ctx.beginPath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.moveTo(gmmx, gmmy); ctx.lineTo(gsx, gsy); ctx.stroke();
+    ctx.beginPath(); ctx.fillStyle = "rgba(0, 180, 255, 0.8)"; ctx.arc(gsx, gsy, 16, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  if (currentMissionType === "ssps") {
+    ctx.save(); 
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(t*0.1)*0.2})`; 
+    ctx.lineWidth = 1 + Math.random()*2; 
+    ctx.setLineDash([5, 15]); 
+    ctx.beginPath(); ctx.moveTo(satX, satY); ctx.lineTo(mmx, mmy); ctx.stroke();
+    ctx.restore();
+    
+    ctx.save();
+    const glowRadius = 12 + Math.sin(t * 0.2) * 6; 
+    let 地表Glow = ctx.createRadialGradient(mmx, mmy, 1, mmx, mmy, glowRadius);
+    地表Glow.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+    地表Glow.addColorStop(0.3, "rgba(255, 200, 0, 0.6)");
+    地表Glow.addColorStop(0.7, "rgba(255, 100, 0, 0.2)");
+    地表Glow.addColorStop(1, "transparent");
+    
+    ctx.fillStyle = 地表Glow;
+    ctx.beginPath();
+    ctx.arc(mmx, mmy, glowRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = "#ffd700";
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#ffd700";
+    ctx.beginPath(); ctx.arc(mmx, mmy, 3.5 + Math.random()*2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  if (launchState === "space_climb" || launchState === "docking_success" || launchState === "leave_orbit") {
+    const baseObj = rocketBases[selectedLaunchSite]; const mapRatioRad = (baseObj.x / 400) * Math.PI * 2; const initialLaunchAngle = cachedSatAngleAtLaunch + mapRatioRad - Math.PI;
+    let rx, ry, pitchAngle, renderScale = 1.5, globalAlpha = 1.0;
+
+    if (launchState === "leave_orbit") {
+      const targetX = moonX;
+      const targetY = moonY;
+      
+      const lerpFactor = Math.pow(leaveOrbitProgress, 1.2);
+      rx = dockWB_X3D + (targetX - dockWB_X3D) * lerpFactor;
+      ry = dockWB_Y3D + (targetY - dockWB_Y3D) * lerpFactor;
+      
+      pitchAngle = Math.atan2(targetY - ry, targetX - rx);
+      if (Math.abs(targetX - rx) < 1.0 && Math.abs(targetY - ry) < 1.0) {
+        pitchAngle = Math.atan2(targetY - dockWB_Y3D, targetX - dockWB_X3D);
+      }
+      
+      renderScale = 1.5 * (1.0 - leaveOrbitProgress * 0.94);
+      globalAlpha = Math.max(0, 1.0 - leaveOrbitProgress);
+    } else {
+      const currentProgress = (launchState === "docking_success") ? 1.0 : spaceRocketProgress;
+      if (selectedLaunchSite === "jaburo") {
+        const startX3D = 300 + R_EARTH * Math.cos(initialLaunchAngle) * scale; const startY3D = 300 + R_EARTH * Math.sin(initialLaunchAngle) * Math.cos(incRad) * scale;
+        rx = startX3D + (satX - startX3D) * currentProgress; ry = startY3D + (satY - startY3D) * currentProgress; pitchAngle = Math.atan2(satY - startY3D, satX - startX3D);
+      } else {
+        const targetOffset = 0.08 * (1.0 - currentProgress); const finalTargetAngleOffset = satAngle - targetOffset; const currentFlightAngle = initialLaunchAngle + (finalTargetAngleOffset - initialLaunchAngle) * currentProgress; const currentRocketR = R_EARTH + (r - R_EARTH) * currentProgress;
+        rx = 300 + currentRocketR * Math.cos(currentFlightAngle) * scale; ry = 300 + currentRocketR * Math.sin(currentFlightAngle) * Math.cos(incRad) * scale;
+        let rx_diff = rx - lastRocketX3D; let ry_diff = ry - lastRocketY3D; pitchAngle = Math.atan2(ry_diff, rx_diff); if (Math.abs(rx_diff) < 0.001) pitchAngle = currentFlightAngle + Math.PI/2;
+      }
+    }
+    lastRocketX3D = rx; lastRocketY3D = ry;
+    
+    if (Math.random() > 0.04) {
+      if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
+        for (let i = 0; i < 3; i++) { launchSmokeParticles.push({ x: rx, y: ry, vx: -Math.cos(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, vy: -Math.sin(pitchAngle) * (3.8 + Math.random()*2.5) + (Math.random()-0.5)*1.2, size: 8 + Math.random() * 8, life: 48, maxLife: 48, color: Math.random() > 0.4 ? "rgba(0, 240, 255, 0.85)" : "rgba(180, 220, 255, 0.3)" }); }
+      } else if (launchState === "space_climb") {
+        launchSmokeParticles.push({ x: rx, y: ry, vx: -Math.cos(pitchAngle)*2 + (Math.random()-0.5)*0.5, vy: -Math.sin(pitchAngle)*2 + (Math.random()-0.5)*0.5, size: 5 + Math.random()*4, life: 30, maxLife: 30, color: (selectedLaunchSite === "jaburo" ? "#00ffff" : "#ffaa00") });
+      }
+    }
+    launchSmokeParticles.forEach((p, idx) => { p.x += p.vx; p.y += p.vy; p.life--; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (p.life/p.maxLife), 0, Math.PI*2); ctx.fill(); if (p.life <= 0) launchSmokeParticles.splice(idx, 1); });
+
+    ctx.save(); ctx.globalAlpha = globalAlpha; ctx.translate(rx, ry); ctx.rotate(pitchAngle + Math.PI/2); ctx.scale(renderScale, renderScale); renderRocketModel(ctx, selectedLaunchSite, launchState==="docking_success"?0:8);
+    if (launchState === "leave_orbit") { ctx.fillStyle = "#ffffff"; ctx.fillRect(-9, 1, 2, 4); ctx.fillStyle = "#ff2222"; ctx.fillRect(-9, 5, 2, 1); }
+    ctx.restore();
+    
+    if (launchState === "docking_success") { ctx.fillStyle = "#33ff33"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(selectedLaunchSite==="jaburo"?"🎯 RECOVERED!":"🎯 DOCKED!", rx, ry - 35); }
+    if (launchState === "leave_orbit" && leaveOrbitProgress > 0.82) {
+      const flareProgress = (leaveOrbitProgress - 0.82) / 0.18; if (!hasPlaySparkle) { playSE("sparkle"); hasPlaySparkle = true; }
+      let pulseSize = (flareProgress < 0.35) ? ((flareProgress / 0.35) * 38) : (38 * (1.0 - (flareProgress - 0.35) / 0.65)); let flareAlpha = (flareProgress < 0.35) ? 1.0 : (1.0 - (flareProgress - 0.35) / 0.65);
+      ctx.save(); ctx.strokeStyle = `rgba(255, 255, 255, ${flareAlpha})`; ctx.fillStyle = `rgba(255, 255, 255, ${flareAlpha})`; ctx.shadowBlur = 18; ctx.shadowColor = "#00ffff"; ctx.beginPath(); ctx.lineWidth = 2.2; ctx.moveTo(rx - pulseSize, ry); ctx.lineTo(rx + pulseSize, ry); ctx.moveTo(rx, ry - pulseSize); ctx.lineTo(rx, ry + pulseSize); ctx.lineWidth = 1.0; ctx.moveTo(rx - pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx + pulseSize*0.7, ry + pulseSize*0.7); ctx.moveTo(rx + pulseSize*0.7, ry - pulseSize*0.7); ctx.lineTo(rx - pulseSize*0.7, ry + pulseSize*0.7); ctx.stroke(); ctx.beginPath(); ctx.arc(rx, ry, Math.min(5, pulseSize * 0.3), 0, Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    if (launchState !== "leave_orbit") { drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); }
+  } else { drawCustomSatelliteIcon(ctx, satX, satY, currentMissionType, alt); }
+
+  if (currentMissionType !== "gundam00" && launchState !== "leave_orbit") {
+    const dx = satX - 300, dy = satY - 300, len = Math.sqrt(dx * dx + dy * dy); const px = 300 + dx * (R_EARTH * scale / len), py = 300 + dy * (R_EARTH * scale / len);
+    ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.moveTo(satX, satY); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); 
+    ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill(); // 🎯 エラー修復：正しく ctx.fill() に修正完了！
+  }
+
+  document.getElementById("hudAlt").textContent = currentAltKM.toLocaleString();
+  if (launchState === "leave_orbit" && selectedLaunchSite === "jaburo") {
+    document.getElementById("hudVel").textContent = "MINOVSKY-DRIVE MAX"; document.getElementById("hudMach").textContent = "WARP-ACCEL"; document.getElementById("hudPeriod").textContent = "BOUND FOR MOON";
+  } else {
+    const calcR = R_EARTH + (currentAltKM * 1000); const currentV = Math.sqrt(G * M / calcR); const speedKMH = Math.round(currentV * 3.6);
+    document.getElementById("hudVel").textContent = (currentMissionType === "gundam00" && launchState==="idle") ? "ELEV-MOTORING" : speedKMH.toLocaleString();
+    document.getElementById("hudMach").textContent = (currentMissionType === "gundam00" && launchState==="idle") ? "VARIABLE" : (speedKMH / 1225).toFixed(1);
+    if (launchState === "space_climb" || launchState === "map_climb" || launchState === "countdown") { document.getElementById("hudPeriod").textContent = "CALCULATING..."; } 
+    else { const pS = (2 * Math.PI * calcR) / currentV, pH = Math.floor(pS / 3600), pM = Math.floor((pS % 3600) / 60); document.getElementById("hudPeriod").textContent = (currentMissionType === "gundam00") ? "24h (SYNCED)" : (pH > 0 ? `${pH}h ${pM}m` : `${pM}m`); }
+  }
+
+  const statusEl = document.getElementById("hudStatus"); 
+  if (launchState === "leave_orbit") { statusEl.textContent = "🚀 HYPER-DRIVE (MOON BOUND)"; statusEl.style.color = "#66aaff"; } 
+  else if (currentMissionType === "gundam00") { statusEl.textContent = `🛗 ACTIVE ASCENT (${elevatorDirection > 0 ? "👉UP" : "👈DOWN"})`; statusEl.style.color = "cyan"; } 
+  else if (currentAltKM < 200) { statusEl.textContent = "⚠️ RE-ENTRY DANGER"; statusEl.style.color = "#f33"; } 
+  else if (currentAltKM == 35786 && incDeg == 0) { statusEl.textContent = "🔒 GEO SYNC LOCK"; statusEl.style.color = "yellow"; } 
+  else if (currentAltKM < 2000) { statusEl.textContent = "NOMINAL (LEO)"; statusEl.style.color = "#66aaff"; } 
+  else if (currentAltKM < 35786) { statusEl.textContent = "NOMINAL (MEO)"; statusEl.style.color = "#66ff99"; } 
+  else { statusEl.textContent = "NOMINAL (HEO)"; statusEl.style.color = "#ffaa00"; }
+  
+  updateGuidancePanel(currentAltKM);
+  const hText = Math.floor(t/3600), mText = Math.floor((t%3600)/60), sText = Math.floor(t%60); document.getElementById("timeText").textContent = `ELAPSED: ${String(hText).padStart(2,'0')}:${String(mText).padStart(2,'0')}:${String(sText).padStart(2,'0')}`;
+  
+  t++; requestAnimationFrame(update);
+}
+
+presetSelect.addEventListener("change", () => { 
+  if (launchState !== "idle") return; 
+  const m = presetSelect.value; 
+  if(m !== "custom") { 
+    slider.value = satellitePresets[m].alt; 
+    incSlider.value = satellitePresets[m].inc; 
+    currentMissionType = satellitePresets[m].type; 
+  } else {
+    currentMissionType = "custom";
+  }
+  altLabel.textContent = slider.value + " km";
+  incLabel.textContent = incSlider.value + "°";
+  playSE("lock"); 
+});
+
+launchSelect.addEventListener("change", () => { 
+  if (launchState !== "idle") return; 
+  selectedLaunchSite = launchSelect.value; 
+  if(selectedLaunchSite !== "none") { 
+    playSE("lock"); launchBtn.className = "ready"; 
+    const targetPresetKey = baseToPresetSyncMap[selectedLaunchSite];
+    presetSelect.value = targetPresetKey; 
+    slider.value = satellitePresets[targetPresetKey].alt; 
+    incSlider.value = satellitePresets[targetPresetKey].inc; 
+    currentMissionType = satellitePresets[targetPresetKey].type;
+    altLabel.textContent = slider.value + " km";
+    incLabel.textContent = incSlider.value + "°";
+  } else { 
+    launchBtn.className = ""; 
+  }
+});
+
+slider.addEventListener("input", () => { 
+  if (launchState !== "idle") return; 
+  presetSelect.value = "custom"; 
+  currentMissionType = "custom"; 
+  altLabel.textContent = slider.value + " km"; 
+  playSE("lock"); 
+});
+
+incSlider.addEventListener("input", () => { 
+  if (launchState !== "idle") return; 
+  presetSelect.value = "custom"; 
+  currentMissionType = "custom"; 
+  incLabel.textContent = incSlider.value + "°"; 
+  playSE("lock"); 
+});
+
+earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
+</script>
+</body>
+</html>
