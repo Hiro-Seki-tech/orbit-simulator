@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宇宙を学ぶ閃きの衛星シミュレータ 2026 v.27 (Stabilized Twilight Edition)</title>
+<title>宇宙を学ぶ 衛星・ロケット シミュレータ COSMO v.2026(v.28) (Stabilized Twilight Edition)</title>
 <style>
   body { background:#000810; color:#fff; text-align:center; font-family:'Courier New', Courier, monospace; margin: 0; padding: 15px; }
   
@@ -84,12 +84,446 @@
 </head>
 <body onclick="autoEnableAudio()">
 
-<h2 id="mainTitle" style="color:#00ffcc; text-shadow: 0 0 10px #00ffcc; font-size: 22px; margin: 10px 0 15px 0;">宇宙を学ぶ閃きの衛星シミュレータ 2026　v27</h2>
+
+
+<!--タイトルとシンボルマーク -->
+
+<style>
+  /* タイトルとボタンを綺麗に横並びにするコンテナ */
+  .cosmo-header-container {
+    max-width: 1100px;
+    margin: 10px auto 15px auto;
+    display: flex;
+    align-items: center;     /* 縦方向を中央揃えにして高さを揃える */
+    justify-content: center; /* 画面中央に配置 */
+    gap: 12px;               /* ボタンとタイトルの間の程よい隙間 */
+  }
+
+  .cosmo-symbol-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 204, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    /* シンボルボタンの大きさ調整　ひとまず仮で28pxに設定（14px〜45pxなど自由に変更可能） */
+    width: 80px;       
+    height: 80px;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+    flex-shrink: 0;          /* 画面が狭くなってもボタンが潰れないように固定 */
+  }
+  
+  /* ホバー時にワインレッドの情熱が湧き上がるネオン演出 */
+  .cosmo-symbol-btn:hover {
+    transform: scale(1.05);
+    border-color: #ff3366; 
+    box-shadow: 0 0 12px rgba(255, 51, 102, 0.7);
+  }
+  
+  .cosmo-symbol-btn svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* 既存のタイトルスタイルを継承しつつ、余白をコンテナ側で制御 */
+  #mainTitle {
+    color: #00ffcc; 
+    text-shadow: 0 0 10px #00ffcc; 
+    font-size: 22px; 
+    margin: 0; /* フレックス内でずれないように余白をゼロにリセット */
+    padding: 0;
+  }
+</style>
+
+<div class="cosmo-header-container">
+  <button class="cosmo-symbol-btn" onclick="toggleAudioViaCosmoSymbol(event)" title="COSMO コア認証 / AUDIO TOGGLE">
+    <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+            <style>
+                text { font-family: 'Share Tech Mono', monospace, sans-serif; }
+            </style>
+            <radialGradient id="spaceBg" cx="50%" cy="50%" r="75%">
+                <stop offset="0%" stop-color="#0c1326"/>
+                <stop offset="60%" stop-color="#050811"/>
+                <stop offset="100%" stop-color="#020306"/>
+            </radialGradient>
+            <filter id="earthGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="12" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+            <radialGradient id="earthGrad" cx="35%" cy="30%" r="65%">
+                <stop offset="0%" stop-color="#3b82f6" />
+                <stop offset="50%" stop-color="#1d4ed8" />
+                <stop offset="85%" stop-color="#0f172a" />
+                <stop offset="100%" stop-color="#020617" />
+            </radialGradient>
+            <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fbbf24" />
+                <stop offset="100%" stop-color="#b45309" />
+            </linearGradient>
+            <linearGradient id="silverMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f1f5f9" />
+                <stop offset="100%" stop-color="#64748b" />
+            </linearGradient>
+            <clipPath id="earthClip">
+                <circle cx="250" cy="250" r="124"/>
+            </clipPath>
+            <path id="pathA" d="M -115,0 A 115,71 0 1,1 115,0 A 115,71 0 1,1 -115,0" />
+            <path id="pathB" d="M -175,0 A 175,100 0 1,1 175,0 A 175,100 0 1,1 -175,0" />
+            <path id="pathC" d="M -150,0 A 150,70 0 1,1 150,0 A 150,70 0 1,1 -150,0" />
+            <path id="pathCosmo" d="M -165,0 A 165,0 0 1,1 165,0 A 165,0 0 1,1 -165,0" />
+            <path id="pathRock" d="M -200,0 A 200,35 0 1,1 200,0 A 200,35 0 1,1 -200,0" />
+        </defs>
+        <rect width="500" height="500" fill="url(#spaceBg)"/>
+        <g id="starfield">
+            <circle cx="490" cy="499" r="1.8" fill="#ffffff" opacity="0.72"><animate attributeName="opacity" values="0.72;0.144;0.72" dur="6.9s" repeatCount="indefinite"/></circle>
+            <circle cx="331" cy="278" r="1.2" fill="#ffffff" opacity="0.41"><animate attributeName="opacity" values="0.41;0.082;0.41" dur="5.6s" repeatCount="indefinite"/></circle>
+            <circle cx="272" cy="405" r="0.7" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="4.5s" repeatCount="indefinite"/></circle>
+            <circle cx="164" cy="140" r="1.7" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="3.6s" repeatCount="indefinite"/></circle>
+            <circle cx="402" cy="345" r="1.8" fill="#ffffff" opacity="0.60"><animate attributeName="opacity" values="0.60;0.12;0.60" dur="3.7s" repeatCount="indefinite"/></circle>
+            <circle cx="390" cy="261" r="0.9" fill="#ffffff" opacity="0.94"><animate attributeName="opacity" values="0.94;0.188;0.94" dur="6.7s" repeatCount="indefinite"/></circle>
+            <circle cx="99" cy="49" r="1.3" fill="#ffffff" opacity="0.93"><animate attributeName="opacity" values="0.93;0.18600000000000003;0.93" dur="4.4s" repeatCount="indefinite"/></circle>
+            <circle cx="389" cy="393" r="1.8" fill="#ffffff" opacity="0.74"><animate attributeName="opacity" values="0.74;0.148;0.74" dur="4.6s" repeatCount="indefinite"/></circle>
+            <circle cx="214" cy="322" r="1.9" fill="#ffffff" opacity="1.00"><animate attributeName="opacity" values="1.00;0.2;1.00" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="387" cy="133" r="1.5" fill="#ffffff" opacity="0.95"><animate attributeName="opacity" values="0.95;0.19;0.95" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="313" cy="199" r="0.8" fill="#ffffff" opacity="0.89"><animate attributeName="opacity" values="0.89;0.17800000000000002;0.89" dur="7.3s" repeatCount="indefinite"/></circle>
+            <circle cx="176" cy="345" r="1.6" fill="#ffffff" opacity="0.85"><animate attributeName="opacity" values="0.85;0.17;0.85" dur="7.4s" repeatCount="indefinite"/></circle>
+            <circle cx="232" cy="439" r="0.6" fill="#ffffff" opacity="0.45"><animate attributeName="opacity" values="0.45;0.09000000000000001;0.45" dur="4.5s" repeatCount="indefinite"/></circle>
+            <circle cx="295" cy="196" r="0.8" fill="#ffffff" opacity="0.68"><animate attributeName="opacity" values="0.68;0.136;0.68" dur="5.5s" repeatCount="indefinite"/></circle>
+            <circle cx="261" cy="420" r="1.1" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="5.4s" repeatCount="indefinite"/></circle>
+            <circle cx="128" cy="446" r="0.6" fill="#ffffff" opacity="0.87"><animate attributeName="opacity" values="0.87;0.17400000000000002;0.87" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="302" cy="62" r="1.8" fill="#ffffff" opacity="0.77"><animate attributeName="opacity" values="0.77;0.15400000000000003;0.77" dur="6.1s" repeatCount="indefinite"/></circle>
+            <circle cx="194" cy="259" r="1.1" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="4.4s" repeatCount="indefinite"/></circle>
+            <circle cx="109" cy="299" r="1.9" fill="#ffffff" opacity="0.57"><animate attributeName="opacity" values="0.57;0.11399999999999999;0.57" dur="7.5s" repeatCount="indefinite"/></circle>
+            <circle cx="224" cy="239" r="0.7" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="7.8s" repeatCount="indefinite"/></circle>
+            <circle cx="447" cy="409" r="1.1" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="6.4s" repeatCount="indefinite"/></circle>
+            <circle cx="484" cy="333" r="0.8" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="7.6s" repeatCount="indefinite"/></circle>
+            <circle cx="54" cy="101" r="0.5" fill="#ffffff" opacity="0.93"><animate attributeName="opacity" values="0.93;0.18600000000000003;0.93" dur="3.2s" repeatCount="indefinite"/></circle>
+            <circle cx="350" cy="143" r="0.8" fill="#ffffff" opacity="0.69"><animate attributeName="opacity" values="0.69;0.13799999999999998;0.69" dur="6.3s" repeatCount="indefinite"/></circle>
+            <circle cx="262" cy="29" r="1.6" fill="#ffffff" opacity="0.63"><animate attributeName="opacity" values="0.63;0.126;0.63" dur="4.3s" repeatCount="indefinite"/></circle>
+            <circle cx="114" cy="391" r="1.2" fill="#ffffff" opacity="0.73"><animate attributeName="opacity" values="0.73;0.146;0.73" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="304" cy="63" r="1.8" fill="#ffffff" opacity="0.99"><animate attributeName="opacity" values="0.99;0.198;0.99" dur="3.9s" repeatCount="indefinite"/></circle>
+            <circle cx="199" cy="280" r="2.0" fill="#ffffff" opacity="0.56"><animate attributeName="opacity" values="0.56;0.11200000000000002;0.56" dur="3.1s" repeatCount="indefinite"/></circle>
+            <circle cx="346" cy="323" r="1.6" fill="#ffffff" opacity="0.59"><animate attributeName="opacity" values="0.59;0.118;0.59" dur="6.5s" repeatCount="indefinite"/></circle>
+            <circle cx="328" cy="114" r="1.9" fill="#ffffff" opacity="0.55"><animate attributeName="opacity" values="0.55;0.11000000000000001;0.55" dur="3.8s" repeatCount="indefinite"/></circle>
+            <circle cx="218" cy="251" r="0.8" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="7.6s" repeatCount="indefinite"/></circle>
+            <circle cx="82" cy="182" r="1.4" fill="#ffffff" opacity="0.84"><animate attributeName="opacity" values="0.84;0.168;0.84" dur="5.7s" repeatCount="indefinite"/></circle>
+            <circle cx="414" cy="221" r="0.5" fill="#ffffff" opacity="0.74"><animate attributeName="opacity" values="0.74;0.148;0.74" dur="7.3s" repeatCount="indefinite"/></circle>
+            <circle cx="322" cy="426" r="1.4" fill="#ffffff" opacity="0.80"><animate attributeName="opacity" values="0.80;0.16000000000000003;0.80" dur="4.2s" repeatCount="indefinite"/></circle>
+            <circle cx="388" cy="322" r="1.5" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="8.0s" repeatCount="indefinite"/></circle>
+            <circle cx="284" cy="407" r="1.1" fill="#ffffff" opacity="0.75"><animate attributeName="opacity" values="0.75;0.15000000000000002;0.75" dur="6.8s" repeatCount="indefinite"/></circle>
+            <circle cx="44" cy="275" r="0.7" fill="#ffffff" opacity="0.48"><animate attributeName="opacity" values="0.48;0.096;0.48" dur="5.7s" repeatCount="indefinite"/></circle>
+            <circle cx="88" cy="415" r="1.9" fill="#ffffff" opacity="0.55"><animate attributeName="opacity" values="0.55;0.11000000000000001;0.55" dur="5.9s" repeatCount="indefinite"/></circle>
+            <circle cx="292" cy="247" r="1.2" fill="#ffffff" opacity="0.83"><animate attributeName="opacity" values="0.83;0.166;0.83" dur="6.4s" repeatCount="indefinite"/></circle>
+            <circle cx="46" cy="455" r="0.7" fill="#ffffff" opacity="0.88"><animate attributeName="opacity" values="0.88;0.17600000000000002;0.88" dur="4.9s" repeatCount="indefinite"/></circle>
+            <circle cx="381" cy="243" r="1.9" fill="#ffffff" opacity="0.65"><animate attributeName="opacity" values="0.65;0.13;0.65" dur="5.9s" repeatCount="indefinite"/></circle>
+            <circle cx="228" cy="161" r="0.7" fill="#ffffff" opacity="0.79"><animate attributeName="opacity" values="0.79;0.15800000000000003;0.79" dur="3.3s" repeatCount="indefinite"/></circle>
+            <circle cx="136" cy="400" r="0.8" fill="#ffffff" opacity="0.43"><animate attributeName="opacity" values="0.43;0.08600000000000001;0.43" dur="4.1s" repeatCount="indefinite"/></circle>
+            <circle cx="405" cy="339" r="1.8" fill="#ffffff" opacity="0.50"><animate attributeName="opacity" values="0.50;0.1;0.50" dur="6.3s" repeatCount="indefinite"/></circle>
+            <circle cx="174" cy="247" r="1.6" fill="#ffffff" opacity="0.52"><animate attributeName="opacity" values="0.52;0.10400000000000001;0.52" dur="3.5s" repeatCount="indefinite"/></circle>
+        </g>
+        <g opacity="0.35">
+            <ellipse cx="250" cy="250" rx="115" ry="71" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4" transform="rotate(38.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="175" ry="100" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="8,4,2,4" transform="rotate(-35.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="150" ry="70" fill="none" stroke="#a855f7" stroke-width="1" stroke-dasharray="6,3" transform="rotate(-28.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="165" ry="0" fill="none" stroke="#38bdf8" stroke-width="0.5" stroke-dasharray="12,6" transform="rotate(0.0 250 250)" />
+            <ellipse cx="250" cy="250" rx="200" ry="35" fill="none" stroke="#f43f5e" stroke-width="1" transform="rotate(-10.0 250 250)" />
+        </g>
+        <g id="behindEarthLayer">
+            <g transform="translate(250, 250) rotate(38.0)">
+                <g>
+                    <circle cx="-14" cy="0" r="4" fill="#3b82f6" filter="url(#neonGlow)" opacity="0.8">
+                        <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite" />
+                    </circle>
+                    <rect x="-8" y="-6" width="16" height="12" rx="2" fill="url(#goldFoil)" stroke="#78350f" stroke-width="1" />
+                    <rect x="-6" y="-18" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="-6" x2="0" y2="-12" stroke="#475569" stroke-width="1.5" />
+                    <rect x="-6" y="12" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="6" x2="0" y2="12" stroke="#475569" stroke-width="1.5" />
+                    <circle cx="0" cy="0" r="2.5" fill="#f8fafc" />
+                    <animateMotion dur="6.54s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="6.54s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-35.0)">
+                <g>
+                    <circle cx="-16" cy="0" r="5" fill="#06b6d4" filter="url(#neonGlow)" opacity="0.9">
+                        <animate attributeName="r" values="3;6;3" dur="0.12s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="-2" cy="0" r="7" fill="url(#silverMetal)" stroke="#475569" stroke-width="1" />
+                    <path d="M 8,-9 Q 15,0 8,9" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <line x1="11" y1="0" x2="18" y2="0" stroke="#f43f5e" stroke-width="1" />
+                    <circle cx="18" cy="0" r="1.5" fill="#f43f5e" />
+                    <polygon points="-8,-4 -20,-14 -14,-16 -4,-4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <polygon points="-8,4 -20,14 -14,16 -4,4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <animateMotion dur="10.47s" repeatCount="indefinite" rotate="auto" begin="-3.49s"><mpath href="#pathB"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="10.47s" repeatCount="indefinite" begin="-3.49s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-28.0)">
+                <g>
+                    <polygon points="-16,-4 -30,0 -16,4" fill="#38bdf8" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-16,-4 -30,0 -16,4; -16,-3 -36,0 -16,3; -16,-4 -30,0 -16,4" dur="0.12s" repeatCount="indefinite"/>
+                    </polygon>
+                    <polygon points="-12,-10 -24,-12 -14,-7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <polygon points="-12,10 -24,12 -14,7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <path d="M -14,-12 L -6,-6 L -6,6 L -14,12 Z" fill="#475569" stroke="#334155" stroke-width="1" />
+                    <path d="M -12,-16 L -2,-6 L -2,6 L -12,16 Z" fill="#1e293b" stroke="#334155" stroke-width="1" />
+                    <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#1d4ed8" stroke="#1e40af" stroke-width="1" />
+                    <rect x="-3" y="-5" width="6" height="3" fill="#eab308" />
+                    <rect x="-4" y="2" width="8" height="4" fill="#ef4444" />
+                    <rect x="-5" y="-1" width="10" height="3" fill="#f8fafc" />
+                    <path d="M -2,-6 L 4,-6 L 2,-13 L -4,-13 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5" />
+                    <path d="M 2,-13 L 8,-18 L 1,-15 L -6,-18 L -1,-13 Z" fill="#f59e0b" />
+                    <polygon points="3,-6 5,-6 4,-4" fill="#ef4444" />
+                    <circle cx="2" cy="-9" r="1.2" fill="#22c55e" filter="url(#neonGlow)" />
+                    <path d="M -2,4 L 6,4 L 8,8 L 2,8 Z" fill="#f8fafc" />
+                    <rect x="4" y="3" width="12" height="3" rx="1" fill="#475569" />
+                    <line x1="16" y1="4.5" x2="26" y2="4.5" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+                    <path d="M -2,-4 L 4,-4 L 6,-8 L 0,-8 Z" fill="#f8fafc" />
+                    <g transform="translate(1, -9) rotate(-15)">
+                        <path d="M -6,-3 L 6,-3 L 4,8 L -4,8 Z" fill="#ef4444" stroke="#f8fafc" stroke-width="1" />
+                        <polygon points="0,-1 1,2 4,2 1,4 2,7 0,5 -2,7 -1,4 -4,2 -1,2" fill="#eab308" />
+                    </g>
+                    <animateMotion dur="13.09s" repeatCount="indefinite" rotate="auto" begin="-15.71s"><mpath href="#pathC"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="13.09s" repeatCount="indefinite" begin="-15.71s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(0.0)">
+                <g>
+                    <g filter="url(#neonGlow)">
+                        <text x="0" y="24" font-family="'Share Tech Mono', monospace, sans-serif" font-size="75" font-weight="900" fill="#38bdf8" stroke="#1e40af" stroke-width="5" paint-order="stroke fill" text-anchor="middle" letter-spacing="1">COSMO</text>
+                    </g>
+                    <animateMotion dur="17.45s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="17.45s" repeatCount="indefinite" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-10.0)">
+                <g>
+                    <polygon points="-24,0 -12,-6 -12,6" fill="#f97316" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-24,0 -12,-6 -12,6; -28,0 -12,-5 -12,5; -24,0 -12,-6 -12,6" dur="0.15s" repeatCount="indefinite"/>
+                    </polygon>
+                    <path d="M 14,0 L -12,-8 L -12,8 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+                    <path d="M -12,-8 L -18,-14 L -8,-8 Z" fill="#ef4444" />
+                    <path d="M -12,8 L -18,14 L -8,8 Z" fill="#ef4444" />
+                    <circle cx="4" cy="0" r="3" fill="#38bdf8" stroke="#1e3a8a" stroke-width="0.5" />
+                    <animateMotion dur="7.48s" repeatCount="indefinite" rotate="auto" begin="-5.24s"><mpath href="#pathRock"/></animateMotion>
+                    <animate attributeName="visibility" values="visible;hidden" calcMode="discrete" dur="7.48s" repeatCount="indefinite" begin="-5.24s" />
+                </g>
+            </g>
+        </g>
+        <g id="earthGroup" filter="url(#earthGlow)">
+            <circle cx="250" cy="250" r="124" fill="url(#earthGrad)"/>
+            <g clip-path="url(#earthClip)">
+                <g opacity="0.95">
+                    <g id="continentsWrap">
+                        <g>
+                            <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                            <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                            <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                            <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                            <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                            <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                            <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                            <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                            <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                            <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                        </g>
+                        <g transform="translate(400, 0)">
+                            <path d="M 100,180 Q 130,165 160,180 T 140,210 T 100,205 Z" fill="#3f6212" />
+                            <path d="M 115,185 Q 135,175 145,190 T 120,200 Z" fill="#ca8a04" />
+                            <path d="M 130,210 Q 165,225 150,265 T 120,305 T 115,250 Z" fill="#b45309" />
+                            <path d="M 125,215 Q 140,240 125,275 T 120,295" stroke="#f59e0b" stroke-width="1.5" fill="none" />
+                            <path d="M 210,165 Q 260,145 330,165 T 350,210 T 290,220 T 240,195 Z" fill="#166534" />
+                            <path d="M 270,185 Q 310,180 320,195 T 280,200 Z" fill="#ca8a04" />
+                            <path d="M 210,200 Q 255,205 250,250 T 225,285 T 195,230 Z" fill="#b45309" />
+                            <path d="M 215,205 Q 245,210 240,230 T 205,225 Z" fill="#eab308" />
+                            <path d="M 345,235 Q 375,230 380,255 T 355,265 Z" fill="#b45309" />
+                            <path d="M 352,242 Q 370,240 372,252 Z" fill="#ca8a04" />
+                        </g>
+                    </g>
+                    <animateTransform href="#continentsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="33.33s" repeatCount="indefinite"/>
+                </g>
+                <g opacity="0.4">
+                    <g id="cloudsWrap">
+                        <g>
+                            <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                            <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                            <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                        </g>
+                        <g transform="translate(400, 0)">
+                            <path d="M 80,170 Q 120,160 140,175 T 180,170 T 200,185 Q 150,195 90,180 Z" fill="#ffffff" />
+                            <path d="M 220,210 Q 260,195 280,220 T 320,210 T 340,230 Q 280,245 230,225 Z" fill="#ffffff" />
+                            <path d="M 120,260 Q 150,250 170,270 T 210,260 T 230,280 Q 180,290 130,275 Z" fill="#ffffff" />
+                        </g>
+                    </g>
+                    <animateTransform href="#cloudsWrap" attributeName="transform" type="translate" from="0, 0" to="-400, 0" dur="24.69s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <path d="M 250 126 A 124 124 0 0 1 250 374 A 124 124 0 0 0 250 126 Z" fill="#020617" opacity="0.6"/>
+        </g>
+        <g id="inFrontEarthLayer">
+            <g transform="translate(250, 250) rotate(38.0)">
+                <g>
+                    <circle cx="-14" cy="0" r="4" fill="#3b82f6" filter="url(#neonGlow)" opacity="0.8">
+                        <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite" />
+                    </circle>
+                    <rect x="-8" y="-6" width="16" height="12" rx="2" fill="url(#goldFoil)" stroke="#78350f" stroke-width="1" />
+                    <rect x="-6" y="-18" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="-6" x2="0" y2="-12" stroke="#475569" stroke-width="1.5" />
+                    <rect x="-6" y="12" width="12" height="6" rx="1" fill="#1e40af" stroke="#3b82f6" stroke-width="1" />
+                    <line x1="0" y1="6" x2="0" y2="12" stroke="#475569" stroke-width="1.5" />
+                    <circle cx="0" cy="0" r="2.5" fill="#f8fafc" />
+                    <animateMotion dur="6.54s" repeatCount="indefinite" rotate="auto"><mpath href="#pathA"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="6.54s" repeatCount="indefinite"/>
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-35.0)">
+                <g>
+                    <circle cx="-16" cy="0" r="5" fill="#06b6d4" filter="url(#neonGlow)" opacity="0.9">
+                        <animate attributeName="r" values="3;6;3" dur="0.12s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="-2" cy="0" r="7" fill="url(#silverMetal)" stroke="#475569" stroke-width="1" />
+                    <path d="M 8,-9 Q 15,0 8,9" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <line x1="11" y1="0" x2="18" y2="0" stroke="#f43f5e" stroke-width="1" />
+                    <circle cx="18" cy="0" r="1.5" fill="#f43f5e" />
+                    <polygon points="-8,-4 -20,-14 -14,-16 -4,-4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <polygon points="-8,4 -20,14 -14,16 -4,4" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />
+                    <animateMotion dur="10.47s" repeatCount="indefinite" rotate="auto" begin="-3.49s"><mpath href="#pathB"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="10.47s" repeatCount="indefinite" begin="-3.49s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-28.0)">
+                <g>
+                    <polygon points="-16,-4 -30,0 -16,4" fill="#38bdf8" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-16,-4 -30,0 -16,4; -16,-3 -36,0 -16,3; -16,-4 -30,0 -16,4" dur="0.12s" repeatCount="indefinite"/>
+                    </polygon>
+                    <polygon points="-12,-10 -24,-12 -14,-7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <polygon points="-12,10 -24,12 -14,7" fill="#f43f5e" filter="url(#neonGlow)"/>
+                    <path d="M -14,-12 L -6,-6 L -6,6 L -14,12 Z" fill="#475569" stroke="#334155" stroke-width="1" />
+                    <path d="M -12,-16 L -2,-6 L -2,6 L -12,16 Z" fill="#1e293b" stroke="#334155" stroke-width="1" />
+                    <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#1d4ed8" stroke="#1e40af" stroke-width="1" />
+                    <rect x="-3" y="-5" width="6" height="3" fill="#eab308" />
+                    <rect x="-4" y="2" width="8" height="4" fill="#ef4444" />
+                    <rect x="-5" y="-1" width="10" height="3" fill="#f8fafc" />
+                    <path d="M -2,-6 L 4,-6 L 2,-13 L -4,-13 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5" />
+                    <path d="M 2,-13 L 8,-18 L 1,-15 L -6,-18 L -1,-13 Z" fill="#f59e0b" />
+                    <polygon points="3,-6 5,-6 4,-4" fill="#ef4444" />
+                    <circle cx="2" cy="-9" r="1.2" fill="#22c55e" filter="url(#neonGlow)" />
+                    <path d="M -2,4 L 6,4 L 8,8 L 2,8 Z" fill="#f8fafc" />
+                    <rect x="4" y="3" width="12" height="3" rx="1" fill="#475569" />
+                    <line x1="16" y1="4.5" x2="26" y2="4.5" stroke="#38bdf8" stroke-width="2" filter="url(#neonGlow)" />
+                    <path d="M -2,-4 L 4,-4 L 6,-8 L 0,-8 Z" fill="#f8fafc" />
+                    <g transform="translate(1, -9) rotate(-15)">
+                        <path d="M -6,-3 L 6,-3 L 4,8 L -4,8 Z" fill="#ef4444" stroke="#f8fafc" stroke-width="1" />
+                        <polygon points="0,-1 1,2 4,2 1,4 2,7 0,5 -2,7 -1,4 -4,2 -1,2" fill="#eab308" />
+                    </g>
+                    <animateMotion dur="13.09s" repeatCount="indefinite" rotate="auto" begin="-15.71s"><mpath href="#pathC"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="13.09s" repeatCount="indefinite" begin="-15.71s" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(0.0)">
+                <g>
+                    <g filter="url(#neonGlow)">
+                        <text x="0" y="24" font-family="'Share Tech Mono', monospace, sans-serif" font-size="75" font-weight="900" fill="#38bdf8" stroke="#1e40af" stroke-width="5" paint-order="stroke fill" text-anchor="middle" letter-spacing="1">COSMO</text>
+                    </g>
+                    <animateMotion dur="17.45s" repeatCount="indefinite"><mpath href="#pathCosmo"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="17.45s" repeatCount="indefinite" />
+                </g>
+            </g>
+            <g transform="translate(250, 250) rotate(-10.0)">
+                <g>
+                    <polygon points="-24,0 -12,-6 -12,6" fill="#f97316" filter="url(#neonGlow)">
+                        <animate attributeName="points" values="-24,0 -12,-6 -12,6; -28,0 -12,-5 -12,5; -24,0 -12,-6 -12,6" dur="0.15s" repeatCount="indefinite"/>
+                    </polygon>
+                    <path d="M 14,0 L -12,-8 L -12,8 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+                    <path d="M -12,-8 L -18,-14 L -8,-8 Z" fill="#ef4444" />
+                    <path d="M -12,8 L -18,14 L -8,8 Z" fill="#ef4444" />
+                    <circle cx="4" cy="0" r="3" fill="#38bdf8" stroke="#1e3a8a" stroke-width="0.5" />
+                    <animateMotion dur="7.48s" repeatCount="indefinite" rotate="auto" begin="-5.24s"><mpath href="#pathRock"/></animateMotion>
+                    <animate attributeName="visibility" values="hidden;visible" calcMode="discrete" dur="7.48s" repeatCount="indefinite" begin="-5.24s" />
+                </g>
+            </g>
+        </g>
+    </svg>
+  </button>
+  
+  <h2 id="mainTitle">宇宙を学ぶ 衛星・ロケット シミュレータ【COSMO】 v.2026 </h2>
+</div>
+
+<script>
+  /* シンボルマークを押したときのオーディオON/OFF切り替え関数 */
+  function toggleAudioViaCosmoSymbol(event) {
+    if (event) event.stopPropagation();
+    
+    // 1. まず本体の音声ON/OFF状態を判定する
+    const audioBtn = document.getElementById("audioBtn");
+    const isCurrentlyOn = audioBtn && audioBtn.textContent.includes("ON");
+    
+    // 2. 状態を反転させる（ONならOFFへ、OFFならONへ）
+    if (isCurrentlyOn) {
+      if (audioCtx) audioCtx.suspend();
+      audioEnabled = false;
+      if (audioBtn) {
+        audioBtn.textContent = "🔇 AUDIO: OFF";
+        audioBtn.className = "";
+      }
+    } else {
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      audioEnabled = true;
+      if (audioBtn) {
+        audioBtn.textContent = "🔊 AUDIO: ON";
+        audioBtn.className = "on";
+      }
+      // ONになった時だけ、カチッと心地いい電子認証音（SE）を鳴らす
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(now + 0.16);
+    }
+    
+    // 3. 右下のジェムリン・ガイダンスパネルへの投影演出
+    const titleEl = document.querySelector("#guidanceBox .guidance-title");
+    const textEl = document.getElementById("guidanceText");
+    
+    if (titleEl && textEl) {
+      if (!isCurrentlyOn) {
+        titleEl.innerHTML = "COSMO 閃きコア・シンクロ完了";
+        textEl.textContent = "宇宙シミュレータCOSMO シンボルマークの認証に成功。空間オーディオを【起動】し、全セクターのシミュレーション同期を開始します。";
+      } else {
+        titleEl.innerHTML = "🔒 COSMO コア・サイレントモード";
+        textEl.textContent = "シンボルマーク認証により、音声信号を【スタンドバイ（消音）】に移行しました。シミュレーション演算はバックグラウンドで継続中だよ！";
+      }
+    }
+  }
+</script>
+
+<!-- ここまで、タイトルとシンボルマーク -->
+
+
 
 <div id="labels">
-  <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">コア赤点灯</span></div>
-  <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">コア緑点灯</span></div>
-  <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・太陽光発電） ⇒ <span style="color:#ffff33; font-weight:bold;">コア黄点灯</span></div>
+  <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">衛星赤点灯</span></div>
+  <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">衛星緑点灯</span></div>
+  <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・太陽光発電） ⇒ <span style="color:#ffff33; font-weight:bold;">衛星黄点灯</span></div>
 </div>
 
 <div id="timeBox">
