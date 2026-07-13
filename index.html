@@ -86,94 +86,108 @@
 <body>
 
 <style>
-  /* ===== SOL追加：COSMO右上メニュー ===== */
+  /* ===== SOL修正：尽生と同じ軽量デザインの共通メニュー ===== */
+  #cosmo-utility-row {
+    position: static;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
   #cosmo-top-menu {
-    position: fixed;
-    top: 14px;
-    right: 14px;
+    position: absolute;
+    top: 72px;
+    right: 10px;
     z-index: 1200;
-    width: 156px;
+    width: 126px;
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    font-family: 'Courier New', Courier, monospace;
+    gap: 5px;
+    font-family: Arial, 'Yu Gothic UI', Meiryo, sans-serif;
   }
+
   .cosmo-top-action,
   .cosmo-language-box {
     box-sizing: border-box;
     width: 100%;
-    border-radius: 7px;
-    background: rgba(8, 20, 35, 0.94);
-    box-shadow: 0 8px 22px rgba(0,0,0,.42), 0 0 12px rgba(0,255,204,.08);
-    backdrop-filter: blur(8px);
+    min-height: 30px;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,.28);
   }
+
   .cosmo-top-action {
-    min-height: 38px;
-    padding: 8px 10px;
-    border: 1px solid rgba(100,116,139,.8);
-    color: #f8fafc;
+    padding: 6px 10px;
+    border: 1px solid #334155;
     text-decoration: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
+    gap: 6px;
     font-size: 12px;
-    font-weight: bold;
+    line-height: 1;
+    font-weight: 700;
     cursor: pointer;
-    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    transition: background .18s ease, transform .12s ease, border-color .18s ease;
   }
-  .cosmo-top-action:hover {
-    transform: translateY(-1px);
-    background: rgba(15, 35, 55, .98);
-    border-color: #00ffcc;
-    box-shadow: 0 0 14px rgba(0,255,204,.22);
+  .cosmo-top-action:hover { background:#334155; }
+  .cosmo-top-action:active { transform:scale(.95); }
+
+  .cosmo-link-action { border-color:rgba(245,158,11,.42); }
+  .cosmo-link-action:hover { border-color:#f59e0b; }
+  .cosmo-link-icon {
+    position:relative;
+    width:16px;
+    height:16px;
+    flex:0 0 16px;
+    display:inline-block;
   }
-  .cosmo-link-action { border-color: rgba(245,158,11,.65); }
-  .cosmo-link-action:hover { border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,.22); }
-  .cosmo-link-bulb { color:#fbbf24; text-shadow:0 0 7px rgba(251,191,36,.8); }
+  .cosmo-link-bulb {
+    position:absolute;
+    left:0;
+    top:0;
+    font-size:14px;
+    line-height:16px;
+    filter:drop-shadow(0 0 4px rgba(251,191,36,.55));
+  }
+  .cosmo-link-bolt {
+    position:absolute;
+    right:-3px;
+    top:-4px;
+    color:#fde047;
+    font-size:9px;
+    line-height:1;
+    text-shadow:0 0 3px rgba(253,224,71,.65);
+  }
 
   .cosmo-language-box {
-    border: 1px solid rgba(0,255,204,.45);
-    padding: 7px;
-  }
-  .cosmo-language-title {
-    color:#94a3b8;
-    font-size:9px;
-    letter-spacing:.12em;
-    margin-bottom:5px;
-    text-align:center;
-  }
-  .cosmo-language-options {
+    padding: 4px;
+    border: 1px solid #334155;
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:5px;
+    gap:4px;
   }
   .cosmo-language-current,
   .cosmo-language-disabled {
-    border-radius:5px;
-    padding:6px 3px;
-    font-size:10px;
-    font-weight:bold;
+    min-width:0;
+    border-radius:6px;
+    padding:5px 2px;
+    font-size:9px;
+    line-height:1;
+    font-weight:700;
     text-align:center;
   }
   .cosmo-language-current {
     color:#001b18;
     background:#00ffcc;
     border:1px solid #00ffcc;
-    box-shadow:0 0 8px rgba(0,255,204,.28);
   }
   .cosmo-language-disabled {
     color:#64748b;
     background:#111827;
     border:1px solid #334155;
     cursor:not-allowed;
-    opacity:.68;
-  }
-  .cosmo-language-note {
-    color:#64748b;
-    font-size:8px;
-    margin-top:5px;
-    text-align:center;
+    opacity:.7;
   }
 
   #cosmo-help-modal {
@@ -255,52 +269,79 @@
   }
   .cosmo-help-ok:hover { background:#00594e; color:#fff; }
 
-  @media (max-width: 1024px) {
-    #cosmo-top-menu {
-      position: static;
-      width: min(100%, 600px);
-      margin: 0 auto 14px;
-      display:grid;
-      grid-template-columns:1fr 1.25fr 1fr;
-      gap:6px;
-    }
-    .cosmo-language-box { padding:5px; }
-    .cosmo-language-title, .cosmo-language-note { display:none; }
+  /* PCでは時間・MUSICを元の右上へ戻し、その直下に小型メニューを置く */
+  #timeBox {
+    position:absolute;
+    top:10px;
+    right:10px;
+    margin:0;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    font-size:16px;
+    color:#00ffcc;
+    text-align:right;
+    white-space:nowrap;
+    line-height:1.35;
   }
+  #timeBox #audioBtn { margin-top:5px; padding:4px 10px; font-size:12px; }
+
+  @media (max-width: 1024px) {
+    #cosmo-utility-row {
+      display:flex;
+      align-items:flex-start;
+      justify-content:flex-end;
+      gap:6px;
+      width:100%;
+      margin:2px auto 10px;
+    }
+    #timeBox {
+      position:static;
+      flex:0 0 auto;
+      margin:0;
+      padding:0;
+      font-size:11px;
+      text-align:right;
+    }
+    #timeBox #audioBtn { margin-top:3px; padding:4px 6px; font-size:9px; }
+    #cosmo-top-menu {
+      position:static;
+      width:auto;
+      flex:0 1 auto;
+      flex-direction:row;
+      gap:4px;
+    }
+    .cosmo-top-action {
+      width:auto;
+      min-height:28px;
+      padding:5px 7px;
+      font-size:10px;
+    }
+    .cosmo-language-box {
+      width:92px;
+      min-height:28px;
+      padding:3px;
+    }
+    .cosmo-language-current,
+    .cosmo-language-disabled { padding:5px 1px; font-size:8px; }
+  }
+
   @media (max-width: 560px) {
-    #cosmo-top-menu { width:100%; grid-template-columns:1fr 1.2fr 1fr; }
-    .cosmo-top-action { min-height:34px; padding:6px 5px; font-size:10px; }
-    .cosmo-language-current, .cosmo-language-disabled { padding:5px 2px; font-size:9px; }
+    #cosmo-utility-row { gap:4px; }
+    #timeBox { font-size:9px; }
+    #timeBox #audioBtn { padding:3px 4px; font-size:8px; }
+    .cosmo-top-action { padding:5px 5px; font-size:9px; gap:3px; }
+    .cosmo-link-icon { width:13px; height:13px; flex-basis:13px; }
+    .cosmo-link-bulb { font-size:12px; line-height:13px; }
+    .cosmo-link-bolt { font-size:7px; }
+    .cosmo-language-box { width:80px; }
+    .cosmo-language-current,
+    .cosmo-language-disabled { font-size:7px; }
     #cosmo-help-dialog { padding:20px 16px; }
     #cosmo-help-dialog h3 { font-size:16px; }
   }
 </style>
-
-
-<!-- ===== SOL追加：COSMO右上メニュー開始 ===== -->
-<div id="cosmo-top-menu" aria-label="COSMO サイトメニュー">
-  <a class="cosmo-top-action cosmo-link-action" href="https://hiro-seki-tech.github.io/Produce-your-Life-with-IP/links/" target="_blank" rel="noopener noreferrer">
-    <span class="cosmo-link-bulb" aria-hidden="true">💡⚡</span><span>リンク</span>
-  </a>
-
-  <div class="cosmo-language-box" aria-label="言語切り替え">
-    <div class="cosmo-language-title">LANGUAGE</div>
-    <div class="cosmo-language-options">
-      <div class="cosmo-language-current" aria-current="page">日本語</div>
-      <div class="cosmo-language-disabled" aria-disabled="true" title="英語版は準備中です">ENGLISH</div>
-    </div>
-    <div class="cosmo-language-note">English: Coming Soon</div>
-  </div>
-
-  <button id="cosmo-help-open" class="cosmo-top-action" type="button" aria-haspopup="dialog" aria-controls="cosmo-help-modal">
-    <span aria-hidden="true">❓</span><span>使い方？</span>
-  </button>
-</div>
-<!-- ===== SOL追加：COSMO右上メニュー終了 ===== -->
-
-
-
-
 <!--タイトルとシンボルマーク -->
 <style>
   .cosmo-header-container {
@@ -373,8 +414,7 @@
 </style>
 
 <div class="cosmo-header-container">
-  <div class="cosmo-header-left">
-    <div class="cosmo-plip-wrap">
+  <div class="cosmo-plip-wrap">
     <button id="cosmo-plip-button" type="button" aria-label="COSMO 音楽切替ボタン" title="BGM → 主題歌 → OFF">
       <span id="cosmo-plip-stage"></span>
     </button>
@@ -392,13 +432,31 @@
         </g>
       </svg>
     </div>
-    </div>
-    <div id="timeBox">
-      <div id="timeText">ELAPSED: 00:00:00</div>
-      <button id="audioBtn" onclick="cycleCosmoMusic(event)">🌌 MUSIC: BGM</button>
-    </div>
   </div>
   <h2 id="mainTitle">宇宙を学ぶ 衛星・ロケット シミュレータ【COSMO】 v.2026</h2>
+</div>
+
+<div id="cosmo-utility-row">
+  <div id="timeBox">
+    <div id="timeText">ELAPSED: 00:00:00</div>
+    <button id="audioBtn" onclick="cycleCosmoMusic(event)">🌌 MUSIC: BGM</button>
+  </div>
+
+  <div id="cosmo-top-menu" aria-label="COSMO サイトメニュー">
+    <a class="cosmo-top-action cosmo-link-action" href="https://hiro-seki-tech.github.io/Produce-your-Life-with-IP/links/" target="_blank" rel="noopener noreferrer">
+      <span class="cosmo-link-icon" aria-hidden="true"><span class="cosmo-link-bulb">💡</span><span class="cosmo-link-bolt">⚡</span></span>
+      <span>リンク</span>
+    </a>
+
+    <div class="cosmo-language-box" aria-label="言語切り替え">
+      <div class="cosmo-language-current" aria-current="page">日本語</div>
+      <div class="cosmo-language-disabled" aria-disabled="true" title="英語版は準備中です">English</div>
+    </div>
+
+    <button id="cosmo-help-open" class="cosmo-top-action" type="button" aria-haspopup="dialog" aria-controls="cosmo-help-modal">
+      <span aria-hidden="true" style="color:#fbbf24;">❓</span><span>使い方？</span>
+    </button>
+  </div>
 </div>
 <div id="cosmo-music-toast" role="status"></div>
 
