@@ -13,7 +13,7 @@
     padding: 10px; border-radius: 6px; margin-bottom: 15px; display: inline-block;
   }
   
-  #timeBox { position: absolute; top: 10px; right: 10px; font-size: 16px; color:#00ffcc; text-align: right; }
+  #timeBox { font-size: 12px; color:#00ffcc; text-align: center; white-space: nowrap; }
   #audioBtn {
     margin-top: 5px; background: #220000; color: #ff3333; border: 1px solid #ff3333;
     padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
@@ -79,20 +79,245 @@
     #launchBox { order: 5; width: 100%; margin-top: 5px; margin-bottom: 5px; }
     #guidanceBox { order: 6; width: 100%; margin-top: 5px; margin-bottom: 10px; }
     #hudBox    { order: 7; width: 100%; }                                     
-    #timeBox { position: static; text-align: center; margin-bottom: 15px; }
+    #timeBox { position: static; text-align: center; margin: 8px 0 12px; }
   }
 </style>
 </head>
 <body>
+
+<style>
+  /* ===== SOL追加：COSMO右上メニュー ===== */
+  #cosmo-top-menu {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 1200;
+    width: 156px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+  .cosmo-top-action,
+  .cosmo-language-box {
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 7px;
+    background: rgba(8, 20, 35, 0.94);
+    box-shadow: 0 8px 22px rgba(0,0,0,.42), 0 0 12px rgba(0,255,204,.08);
+    backdrop-filter: blur(8px);
+  }
+  .cosmo-top-action {
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid rgba(100,116,139,.8);
+    color: #f8fafc;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+  .cosmo-top-action:hover {
+    transform: translateY(-1px);
+    background: rgba(15, 35, 55, .98);
+    border-color: #00ffcc;
+    box-shadow: 0 0 14px rgba(0,255,204,.22);
+  }
+  .cosmo-link-action { border-color: rgba(245,158,11,.65); }
+  .cosmo-link-action:hover { border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,.22); }
+  .cosmo-link-bulb { color:#fbbf24; text-shadow:0 0 7px rgba(251,191,36,.8); }
+
+  .cosmo-language-box {
+    border: 1px solid rgba(0,255,204,.45);
+    padding: 7px;
+  }
+  .cosmo-language-title {
+    color:#94a3b8;
+    font-size:9px;
+    letter-spacing:.12em;
+    margin-bottom:5px;
+    text-align:center;
+  }
+  .cosmo-language-options {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:5px;
+  }
+  .cosmo-language-current,
+  .cosmo-language-disabled {
+    border-radius:5px;
+    padding:6px 3px;
+    font-size:10px;
+    font-weight:bold;
+    text-align:center;
+  }
+  .cosmo-language-current {
+    color:#001b18;
+    background:#00ffcc;
+    border:1px solid #00ffcc;
+    box-shadow:0 0 8px rgba(0,255,204,.28);
+  }
+  .cosmo-language-disabled {
+    color:#64748b;
+    background:#111827;
+    border:1px solid #334155;
+    cursor:not-allowed;
+    opacity:.68;
+  }
+  .cosmo-language-note {
+    color:#64748b;
+    font-size:8px;
+    margin-top:5px;
+    text-align:center;
+  }
+
+  #cosmo-help-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0, 4, 10, .78);
+    backdrop-filter: blur(6px);
+  }
+  #cosmo-help-modal.is-open { display:flex; }
+  #cosmo-help-dialog {
+    position:relative;
+    width:min(560px, 100%);
+    max-height:min(84vh, 720px);
+    overflow-y:auto;
+    text-align:left;
+    color:#dbeafe;
+    background:linear-gradient(145deg, rgba(2,15,28,.98), rgba(7,28,43,.98));
+    border:1px solid rgba(0,255,204,.58);
+    border-radius:16px;
+    box-shadow:0 24px 70px rgba(0,0,0,.72), 0 0 24px rgba(0,255,204,.13);
+    padding:24px;
+  }
+  #cosmo-help-dialog h3 {
+    margin:0 40px 16px 0;
+    color:#00ffcc;
+    font-size:18px;
+    text-shadow:0 0 8px rgba(0,255,204,.35);
+  }
+  .cosmo-help-close {
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    border:1px solid #475569;
+    background:#0f172a;
+    color:#cbd5e1;
+    cursor:pointer;
+    font-size:20px;
+  }
+  .cosmo-help-close:hover { color:#fff; border-color:#00ffcc; }
+  .cosmo-help-step {
+    margin:0 0 12px;
+    padding:12px 13px;
+    border:1px solid rgba(51,65,85,.9);
+    border-left:3px solid #00ffcc;
+    border-radius:8px;
+    background:rgba(15,23,42,.72);
+    font-size:13px;
+    line-height:1.65;
+  }
+  .cosmo-help-step strong { color:#fff; }
+  .cosmo-help-study {
+    margin-top:15px;
+    padding:13px;
+    border:1px dashed rgba(251,191,36,.55);
+    border-radius:9px;
+    color:#cbd5e1;
+    background:rgba(120,53,15,.12);
+    font-size:12px;
+    line-height:1.7;
+  }
+  .cosmo-help-study b { color:#fbbf24; }
+  .cosmo-help-footer { text-align:right; margin-top:17px; }
+  .cosmo-help-ok {
+    border:1px solid #00ffcc;
+    border-radius:8px;
+    background:#003c35;
+    color:#bfffee;
+    padding:9px 18px;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  .cosmo-help-ok:hover { background:#00594e; color:#fff; }
+
+  @media (max-width: 1024px) {
+    #cosmo-top-menu {
+      position: static;
+      width: min(100%, 600px);
+      margin: 0 auto 14px;
+      display:grid;
+      grid-template-columns:1fr 1.25fr 1fr;
+      gap:6px;
+    }
+    .cosmo-language-box { padding:5px; }
+    .cosmo-language-title, .cosmo-language-note { display:none; }
+  }
+  @media (max-width: 560px) {
+    #cosmo-top-menu { width:100%; grid-template-columns:1fr 1.2fr 1fr; }
+    .cosmo-top-action { min-height:34px; padding:6px 5px; font-size:10px; }
+    .cosmo-language-current, .cosmo-language-disabled { padding:5px 2px; font-size:9px; }
+    #cosmo-help-dialog { padding:20px 16px; }
+    #cosmo-help-dialog h3 { font-size:16px; }
+  }
+</style>
+
+
+<!-- ===== SOL追加：COSMO右上メニュー開始 ===== -->
+<div id="cosmo-top-menu" aria-label="COSMO サイトメニュー">
+  <a class="cosmo-top-action cosmo-link-action" href="https://hiro-seki-tech.github.io/Produce-your-Life-with-IP/links/" target="_blank" rel="noopener noreferrer">
+    <span class="cosmo-link-bulb" aria-hidden="true">💡⚡</span><span>リンク</span>
+  </a>
+
+  <div class="cosmo-language-box" aria-label="言語切り替え">
+    <div class="cosmo-language-title">LANGUAGE</div>
+    <div class="cosmo-language-options">
+      <div class="cosmo-language-current" aria-current="page">日本語</div>
+      <div class="cosmo-language-disabled" aria-disabled="true" title="英語版は準備中です">ENGLISH</div>
+    </div>
+    <div class="cosmo-language-note">English: Coming Soon</div>
+  </div>
+
+  <button id="cosmo-help-open" class="cosmo-top-action" type="button" aria-haspopup="dialog" aria-controls="cosmo-help-modal">
+    <span aria-hidden="true">❓</span><span>使い方？</span>
+  </button>
+</div>
+<!-- ===== SOL追加：COSMO右上メニュー終了 ===== -->
+
 
 
 
 <!--タイトルとシンボルマーク -->
 <style>
   .cosmo-header-container {
-    max-width: 1100px; margin: 10px auto 15px; display: flex;
-    align-items: center; justify-content: center; gap: 12px;
+    max-width: 1100px; margin: 6px auto 10px; display: flex;
+    align-items: center; justify-content: center; gap: 16px;
   }
+  .cosmo-header-left {
+    width: 150px; flex: 0 0 150px; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+  }
+  .cosmo-header-left #timeBox {
+    margin-top: 30px; padding: 5px 7px;
+    border: 1px solid rgba(0,255,204,.35); border-radius: 6px;
+    background: rgba(0,20,28,.72); box-shadow: 0 0 10px rgba(0,255,204,.10);
+    line-height: 1.35;
+  }
+  .cosmo-header-left #audioBtn { margin-top: 4px; padding: 3px 7px; font-size: 10px; }
   .cosmo-plip-wrap {
     position: relative; width: 80px; height: 80px; flex: 0 0 80px;
     user-select: none; overflow: visible;
@@ -129,16 +354,27 @@
     transform:translateY(-16px); pointer-events:none; transition:.25s; font-size:14px;
   }
   #cosmo-music-toast.show { opacity:1; transform:translateY(0); }
+  @media (min-width:1025px) and (min-height:900px) {
+    html, body { overflow-y: hidden; }
+    body { padding-top: 8px; padding-bottom: 8px; }
+    #labels { margin-bottom: 8px; padding: 7px 9px; line-height: 1.45; }
+    #sliderBox { margin-top: 9px; padding: 10px 14px; }
+    .slider-row { margin-bottom: 8px; }
+  }
   @media(max-width:600px) {
     .cosmo-header-container { gap:8px; align-items:flex-start; }
+    .cosmo-header-left { width:108px; flex-basis:108px; }
     .cosmo-plip-wrap { width:68px; height:68px; flex-basis:68px; }
+    .cosmo-header-left #timeBox { margin-top:24px; padding:4px 5px; font-size:10px; }
+    .cosmo-header-left #audioBtn { font-size:9px; padding:3px 5px; }
     #mainTitle { font-size:18px; line-height:1.35; }
     .cosmo-plip-bubble { width:84px; }
   }
 </style>
 
 <div class="cosmo-header-container">
-  <div class="cosmo-plip-wrap">
+  <div class="cosmo-header-left">
+    <div class="cosmo-plip-wrap">
     <button id="cosmo-plip-button" type="button" aria-label="COSMO 音楽切替ボタン" title="BGM → 主題歌 → OFF">
       <span id="cosmo-plip-stage"></span>
     </button>
@@ -155,6 +391,11 @@
           <text x="58" y="24" fill="#fbbf24" font-family="Arial,'Yu Gothic UI',Meiryo,sans-serif" font-size="11" font-weight="900" text-anchor="middle">PLIP !!</text>
         </g>
       </svg>
+    </div>
+    </div>
+    <div id="timeBox">
+      <div id="timeText">ELAPSED: 00:00:00</div>
+      <button id="audioBtn" onclick="cycleCosmoMusic(event)">🌌 MUSIC: BGM</button>
     </div>
   </div>
   <h2 id="mainTitle">宇宙を学ぶ 衛星・ロケット シミュレータ【COSMO】 v.2026</h2>
@@ -259,11 +500,6 @@
   <div style="color:#66aaff;">● LEO（低軌道）：0–2,000 km（地球観測・通信） ⇒ <span style="color:#ff3333; font-weight:bold;">衛星赤点灯</span></div>
   <div style="color:#66ff99;">● MEO（中軌道）：2,000–35,786 km（GNSS・4大測位衛星） ⇒ <span style="color:#33ff33; font-weight:bold;">衛星緑点灯</span></div>
   <div style="color:yellow;">● GEO（静止軌道）：35,786 km（気象・太陽光発電） ⇒ <span style="color:#ffff33; font-weight:bold;">衛星黄点灯</span></div>
-</div>
-
-<div id="timeBox">
-  <div id="timeText">ELAPSED: 00:00:00</div>
-  <button id="audioBtn" onclick="cycleCosmoMusic(event)">🌌 MUSIC: BGM</button>
 </div>
 
 <div id="controlRoomContainer">
@@ -1302,5 +1538,58 @@ incSlider.addEventListener("input", () => {
 
 earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
 </script>
+
+<!-- ===== SOL追加：COSMO使い方モーダル開始 ===== -->
+<div id="cosmo-help-modal" role="dialog" aria-modal="true" aria-labelledby="cosmo-help-title" aria-hidden="true">
+  <div id="cosmo-help-dialog" tabindex="-1">
+    <button id="cosmo-help-close" class="cosmo-help-close" type="button" aria-label="使い方を閉じる">×</button>
+    <h3 id="cosmo-help-title">🛰️ 宇宙シミュレータ COSMO の使い方</h3>
+
+    <div class="cosmo-help-step"><strong>1．衛星の軌道を動かそう</strong><br>高度と傾斜角のスライダーを動かすと、衛星の軌道や速度がリアルタイムで変化します。</div>
+    <div class="cosmo-help-step"><strong>2．実在する衛星を選ぼう</strong><br>衛星メニューからISS、GPS、ひまわりなどを選ぶと、その衛星に近い高度と軌道へ切り替わります。</div>
+    <div class="cosmo-help-step"><strong>3．ロケットを打ち上げよう</strong><br>発射基地とロケットを選ぶと目的地が設定されます。準備ができたら「LAUNCH MISSION」を押して発射してください。</div>
+
+    <div class="cosmo-help-study">
+      <b>観察ポイント</b><br>
+      衛星が軌道を保つには、地球の重力と衛星の運動がつり合う速度が必要です。水色の点は地球の自転、白い点は衛星の回転速度を表し、GEO（静止軌道）では両者が一致します。LEO（赤）・MEO（緑）・GEO（黄）にある衛星の種類と役割にも注目してみましょう。
+    </div>
+
+    <div class="cosmo-help-footer"><button id="cosmo-help-ok" class="cosmo-help-ok" type="button">了解しました</button></div>
+  </div>
+</div>
+<script>
+(() => {
+  const modal = document.getElementById('cosmo-help-modal');
+  const dialog = document.getElementById('cosmo-help-dialog');
+  const openBtn = document.getElementById('cosmo-help-open');
+  const closeBtn = document.getElementById('cosmo-help-close');
+  const okBtn = document.getElementById('cosmo-help-ok');
+  let previousFocus = null;
+
+  function openCosmoHelp() {
+    previousFocus = document.activeElement;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => dialog.focus(), 0);
+  }
+  function closeCosmoHelp() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+  }
+
+  openBtn.addEventListener('click', openCosmoHelp);
+  closeBtn.addEventListener('click', closeCosmoHelp);
+  okBtn.addEventListener('click', closeCosmoHelp);
+  modal.addEventListener('click', (event) => { if (event.target === modal) closeCosmoHelp(); });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal.classList.contains('is-open')) closeCosmoHelp();
+  });
+})();
+</script>
+<!-- ===== SOL追加：COSMO使い方モーダル終了 ===== -->
+
 </body>
 </html>
