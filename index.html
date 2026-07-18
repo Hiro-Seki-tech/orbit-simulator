@@ -539,11 +539,11 @@
       if(sessionId===musicSessionId) showToast(ok?'🌌 BGMを再生：'+chosen.split('/').pop():'⚠️ BGMを再生できません');
       return;
     }
-    const songs=['./music/song.mp4','./music/song1.mp4','./music/song2.mp4','./music/song3.mp4','./music/song4.mp4'];
+    const songs=['./music/song.mp3','./music/song1.mp3','./music/song2.mp3','./music/song3.mp3','./music/song4.mp3'];
     const next=async()=>{
       if(sessionId!==musicSessionId || currentState!==1) return;
       const chosen=randomChoice(songs);
-      const ok=await playWithFallback(chosen,'./music/song.mp4',{sessionId,onEnded:()=>{themeLoopTimer=setTimeout(next,3000);}});
+      const ok=await playWithFallback(chosen,'./music/song.mp3',{sessionId,onEnded:()=>{themeLoopTimer=setTimeout(next,3000);}});
       if(sessionId===musicSessionId && currentState===1) showToast(ok?'🎵 主題歌を再生：'+chosen.split('/').pop():'⚠️ 主題歌を再生できません');
     };
     await next();
