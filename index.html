@@ -1611,6 +1611,231 @@ incSlider.addEventListener("input", () => {
 earthImg.onload = update; earthImg.onerror = update; if (earthImg.complete) update();
 </script>
 
+
+<!-- ===== SOL追加：COSMOの軌跡開始 ===== -->
+<style>
+  #cosmo-history-footer {
+    max-width: 1100px;
+    margin: 16px auto 4px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(0,255,204,.28);
+    color: #94a3b8;
+    font-family: Arial, 'Yu Gothic UI', Meiryo, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+  }
+  #cosmo-history-footer .cosmo-history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 5px 9px;
+  }
+  #cosmo-history-open {
+    appearance: none;
+    border: 0;
+    padding: 2px 5px;
+    background: transparent;
+    color: #00ffcc;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(0,255,204,.45);
+    text-underline-offset: 3px;
+  }
+  #cosmo-history-open:hover,
+  #cosmo-history-open:focus-visible {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(0,255,204,.55);
+    outline: none;
+  }
+  #cosmo-history-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0,4,10,.84);
+    backdrop-filter: blur(6px);
+  }
+  #cosmo-history-modal.is-open { display: flex; }
+  #cosmo-history-dialog {
+    position: relative;
+    box-sizing: border-box;
+    width: min(620px, 100%);
+    max-height: min(86vh, 760px);
+    overflow-y: auto;
+    padding: 24px;
+    border: 1px solid rgba(0,255,204,.65);
+    border-radius: 16px;
+    background: linear-gradient(145deg, rgba(2,15,28,.99), rgba(7,28,43,.99));
+    color: #dbeafe;
+    box-shadow: 0 24px 80px rgba(0,0,0,.78), 0 0 28px rgba(0,255,204,.16);
+    font-family: Arial, 'Yu Gothic UI', Meiryo, sans-serif;
+    text-align: left;
+    overscroll-behavior: contain;
+  }
+  #cosmo-history-dialog h3 {
+    margin: 0 42px 18px 0;
+    color: #00ffcc;
+    font-size: 20px;
+    text-shadow: 0 0 10px rgba(0,255,204,.42);
+  }
+  #cosmo-history-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #475569;
+    border-radius: 50%;
+    background: #0f172a;
+    color: #cbd5e1;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #cosmo-history-close:hover,
+  #cosmo-history-close:focus-visible {
+    color: #fff;
+    border-color: #00ffcc;
+    outline: none;
+  }
+  .cosmo-history-entry {
+    padding: 0 0 16px;
+    margin: 0 0 16px;
+    border-bottom: 1px solid rgba(148,163,184,.25);
+  }
+  .cosmo-history-entry:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .cosmo-history-version {
+    margin-bottom: 7px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .cosmo-history-version time {
+    margin-left: 8px;
+    color: #67e8f9;
+    font-weight: 600;
+  }
+  .cosmo-history-entry ul {
+    margin: 0;
+    padding-left: 1.35em;
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  @media (max-width: 600px) {
+    #cosmo-history-footer { margin-top: 12px; font-size: 11px; }
+    #cosmo-history-modal { padding: 10px; }
+    #cosmo-history-dialog { max-height: 88vh; padding: 20px 16px; border-radius: 13px; }
+    #cosmo-history-dialog h3 { font-size: 17px; }
+    .cosmo-history-version { font-size: 13px; }
+    .cosmo-history-entry ul { font-size: 12px; }
+  }
+</style>
+
+<footer id="cosmo-history-footer" aria-label="COSMO バージョン情報">
+  <div class="cosmo-history-meta">
+    <span>Version 67</span><span aria-hidden="true">｜</span>
+    <time datetime="2026-08-06">2026.08.06</time><span aria-hidden="true">｜</span>
+    <button id="cosmo-history-open" type="button" aria-haspopup="dialog" aria-controls="cosmo-history-modal">🌌 COSMOの軌跡</button>
+  </div>
+</footer>
+
+<div id="cosmo-history-modal" role="dialog" aria-modal="true" aria-labelledby="cosmo-history-title" aria-hidden="true">
+  <div id="cosmo-history-dialog" tabindex="-1">
+    <button id="cosmo-history-close" type="button" aria-label="COSMOの軌跡を閉じる">×</button>
+    <h3 id="cosmo-history-title">🌌 COSMOの軌跡</h3>
+
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 67 <time datetime="2026-08-06">2026.08.06</time></div>
+      <ul><li>「COSMOの軌跡」を追加</li><li>作品の成長記録を記録開始</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 66 <time datetime="2026-07-18">2026.07.18</time></div>
+      <ul><li>英語版を公開</li><li>海外向けレイアウトを調整</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 65 <time datetime="2026-07-14">2026.07.14</time></div>
+      <ul><li>主題歌「銀河のディーバ」多言語版を制作</li><li>海外展開へ向けた音楽対応</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 64 <time datetime="2026-07-13">2026.07.13</time></div>
+      <ul><li>新シンボルボタンを採用</li><li>BGM・主題歌・OFF切替を共通仕様化</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 63 <time datetime="2026-07-13">2026.07.13</time></div>
+      <ul><li>レイアウトを最適化</li><li>時間表示・MUSIC表示を改善</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 62 <time datetime="2026-07-12">2026.07.12</time></div>
+      <ul><li>主題歌「銀河のディーバ」を追加</li><li>COSMOの世界観を本格的に構築</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 61 <time datetime="2026-07-12">2026.07.12</time></div>
+      <ul><li>宇宙環境音を改善</li><li>効果音とBGMの演出を調整</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 10 <time datetime="2026-05-23">2026.05.23</time></div>
+      <ul><li>衛星シミュレータが現在の形へ進化</li><li>ロケット発射機能を追加</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 2 <time datetime="2026-05-18">2026.05.18</time></div>
+      <ul><li>GitHubで公開開始</li><li>Webシミュレータとして運用開始</li></ul>
+    </section>
+    <section class="cosmo-history-entry">
+      <div class="cosmo-history-version">Version 1 <time datetime="2026-05-17">2026.05.17</time></div>
+      <ul><li>宇宙・衛星シミュレータの制作を開始</li><li>地球の自転と衛星の公転を物理式で表現</li><li>PLIP初のプログラム作品が誕生</li></ul>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const modal = document.getElementById('cosmo-history-modal');
+  const dialog = document.getElementById('cosmo-history-dialog');
+  const openBtn = document.getElementById('cosmo-history-open');
+  const closeBtn = document.getElementById('cosmo-history-close');
+  let previousFocus = null;
+  let previousOverflow = '';
+
+  function openCosmoHistory() {
+    previousFocus = document.activeElement;
+    previousOverflow = document.body.style.overflow;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => dialog.focus(), 0);
+  }
+
+  function closeCosmoHistory() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = previousOverflow;
+    if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+  }
+
+  openBtn.addEventListener('click', openCosmoHistory);
+  closeBtn.addEventListener('click', closeCosmoHistory);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) closeCosmoHistory();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal.classList.contains('is-open')) closeCosmoHistory();
+  });
+})();
+</script>
+<!-- ===== SOL追加：COSMOの軌跡終了 ===== -->
+
 <!-- ===== SOL追加：COSMO使い方モーダル開始 ===== -->
 <div id="cosmo-help-modal" role="dialog" aria-modal="true" aria-labelledby="cosmo-help-title" aria-hidden="true">
   <div id="cosmo-help-dialog" tabindex="-1">
